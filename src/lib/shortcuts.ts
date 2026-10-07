@@ -24,7 +24,6 @@ export const REBINDABLE_SHORTCUT_IDS: readonly ShortcutId[] = [
   'undo',
   'redo',
   'copy',
-  'paste',
   'duplicate',
   'newVersion',
 ]

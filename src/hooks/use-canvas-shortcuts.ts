@@ -4,7 +4,7 @@ import type { Shortcut } from '@/lib/shortcuts'
 import { useCanvasStore } from '@/stores/canvas-store'
 import { useSettingsStore } from '@/stores/settings-store'
 
-function isEditableTarget(target: EventTarget | null): boolean {
+export function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
   return (
     target instanceof HTMLInputElement ||
@@ -24,7 +24,6 @@ export function useCanvasShortcuts() {
   const undo = useCanvasStore((state) => state.undo)
   const redo = useCanvasStore((state) => state.redo)
   const copySelection = useCanvasStore((state) => state.copySelection)
-  const pasteClipboard = useCanvasStore((state) => state.pasteClipboard)
   const duplicateSelection = useCanvasStore((state) => state.duplicateSelection)
   const createVersionForSelection = useCanvasStore(
     (state) => state.createVersionForSelection,
@@ -41,7 +40,6 @@ export function useCanvasShortcuts() {
       [byId.redo, redo],
       [byId.redoAlt, redo],
       [byId.copy, copySelection],
-      [byId.paste, pasteClipboard],
       [byId.duplicate, duplicateSelection],
       [byId.newVersion, createVersionForSelection],
     ]
@@ -64,5 +62,5 @@ export function useCanvasShortcuts() {
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [byId, settingsDialogOpen, undo, redo, copySelection, pasteClipboard, duplicateSelection, createVersionForSelection])
+  }, [byId, settingsDialogOpen, undo, redo, copySelection, duplicateSelection, createVersionForSelection])
 }

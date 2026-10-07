@@ -2,7 +2,7 @@
 
 import { useCallback, useState, type KeyboardEvent } from 'react'
 import { Panel } from '@xyflow/react'
-import { ChevronDown, Plus, Settings, Trash2 } from 'lucide-react'
+import { ChevronDown, Pencil, Plus, Settings, Trash2 } from 'lucide-react'
 
 import { ConfirmDialog } from '@/components/dialogs/confirm-dialog'
 import { SettingsDialog } from '@/components/settings/settings-dialog'
@@ -29,30 +29,36 @@ export function SideBar() {
     canvasList,
     newCanvas,
     loadCanvas,
-    renameCurrentCanvas,
+    renameCanvas,
     removeCanvas,
   } = useCanvasStore((state) => state)
   const setSettingsDialogOpen = useSettingsStore(
     (state) => state.setSettingsDialogOpen,
   )
   const [open, setOpen] = useState(false)
-  const [draftName, setDraftName] = useState<string | null>(null)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameDraft, setRenameDraft] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<CanvasMeta | null>(null)
 
-  const startRename = useCallback(() => {
-    setOpen(false)
-    setDraftName(canvasName)
-  }, [canvasName])
+  const startRename = useCallback((meta: CanvasMeta) => {
+    setRenamingId(meta.id)
+    setRenameDraft(meta.name)
+  }, [])
 
-  const saveName = useCallback(() => {
-    if (draftName === null) return
-    setDraftName(null)
-    void renameCurrentCanvas(draftName)
-  }, [draftName, renameCurrentCanvas])
+  const saveRename = useCallback(() => {
+    if (renamingId === null) return
+    const id = renamingId
+    const name = renameDraft
+    setRenamingId(null)
+    void renameCanvas(id, name)
+  }, [renamingId, renameDraft, renameCanvas])
 
-  const onNameKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
+  const onRenameKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') event.currentTarget.blur()
-    if (event.key === 'Escape') setDraftName(null)
+    if (event.key === 'Escape') {
+      event.stopPropagation()
+      setRenamingId(null)
+    }
   }, [])
 
   const confirmDelete = useCallback(() => {
@@ -66,28 +72,12 @@ export function SideBar() {
       <TooltipProvider>
         <div className="flex items-center gap-1.5">
           <Popover open={open} onOpenChange={setOpen}>
-            {draftName !== null ? (
-              <input
-                value={draftName}
-                onChange={(event) => setDraftName(event.target.value)}
-                onBlur={saveName}
-                onKeyDown={onNameKeyDown}
-                autoFocus
-                className="nodrag h-7 rounded-lg border border-neutral-700 bg-neutral-950 px-2.5 text-xs text-neutral-200 outline-none"
-              />
-            ) : (
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onDoubleClick={startRename}
-                  className="max-w-[220px]"
-                >
-                  <span className="truncate">{canvasName}</span>
-                  <ChevronDown className="h-3 w-3 text-neutral-500" />
-                </Button>
-              </PopoverTrigger>
-            )}
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="max-w-[220px]">
+                <span className="truncate">{canvasName}</span>
+                <ChevronDown className="h-3 w-3 text-neutral-500" />
+              </Button>
+            </PopoverTrigger>
             <PopoverContent
               align="start"
               className="w-[240px] gap-1 border-neutral-800 bg-neutral-950 p-1.5"
@@ -111,19 +101,44 @@ export function SideBar() {
                 <div className="flex flex-col">
                   {canvasList.map((meta) => (
                     <div key={meta.id} className="group flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          void loadCanvas(meta.id)
-                          setOpen(false)
-                        }}
-                        className={`min-w-0 flex-1 justify-start ${
-                          meta.id === canvasId ? 'text-sky-300' : ''
-                        }`}
-                      >
-                        <span className="truncate">{meta.name}</span>
-                      </Button>
+                      {renamingId === meta.id ? (
+                        <input
+                          value={renameDraft}
+                          onChange={(event) => setRenameDraft(event.target.value)}
+                          onBlur={saveRename}
+                          onKeyDown={onRenameKeyDown}
+                          autoFocus
+                          className="nodrag h-7 min-w-0 flex-1 rounded-md border border-neutral-700 bg-neutral-900 px-2 text-xs text-neutral-200 outline-none"
+                        />
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            void loadCanvas(meta.id)
+                            setOpen(false)
+                          }}
+                          className={`min-w-0 flex-1 justify-start ${
+                            meta.id === canvasId ? 'text-sky-300' : ''
+                          }`}
+                        >
+                          <span className="truncate">{meta.name}</span>
+                        </Button>
+                      )}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label={`Rename ${meta.name}`}
+                            onClick={() => startRename(meta)}
+                            className="shrink-0 text-neutral-500 opacity-0 transition-opacity group-hover:opacity-100 hover:text-neutral-200"
+                          >
+                            <Pencil />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Rename</TooltipContent>
+                      </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button

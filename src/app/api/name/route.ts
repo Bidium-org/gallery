@@ -17,11 +17,20 @@ export async function POST(request: Request) {
     )
   }
 
-  const { prompt } = (await request.json()) as { prompt?: string }
+  const { prompt, existingLabels } = (await request.json()) as {
+    prompt?: string
+    existingLabels?: string[]
+  }
 
   if (!prompt) {
     return NextResponse.json({ error: 'prompt is required' }, { status: 400 })
   }
+
+  const taken = (existingLabels ?? []).filter(Boolean)
+  const takenContext =
+    taken.length > 0
+      ? `\n\nNames already used on this canvas — you must NOT reuse any of them: ${taken.join(', ')}`
+      : ''
 
   try {
     const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
@@ -38,7 +47,7 @@ export async function POST(request: Request) {
             content:
               'You name image-generation outputs. You only ever receive the text prompt that produced the image — never the image itself, and that is expected. Never refuse, never mention missing images, never ask questions. Always reply with an ultra-short name (1 to 3 words) capturing the subject. Name only: no punctuation, no quotes, no explanation.',
           },
-          { role: 'user', content: prompt.replaceAll('@', '') },
+          { role: 'user', content: prompt.replaceAll('@', '') + takenContext },
         ],
       }),
     })
