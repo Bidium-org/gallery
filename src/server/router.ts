@@ -28,7 +28,7 @@ const compiled = table.map(([pattern, mod]) => ({
   mod: mod as RouteModule,
 }))
 
-export async function handle(request: Request): Promise<Response | null> {
+export async function handle(request: Request): Promise<Response> {
   const { pathname } = new URL(request.url)
   for (const { regex, mod } of compiled) {
     const match = regex.exec(pathname)
@@ -37,5 +37,5 @@ export async function handle(request: Request): Promise<Response | null> {
     if (!handler) return new Response(null, { status: 405 })
     return handler(request, { params: Promise.resolve(match.groups ?? {}) })
   }
-  return null
+  return Response.json({ error: 'Not found' }, { status: 404 })
 }
