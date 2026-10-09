@@ -1,6 +1,6 @@
 # Gallery
 
-An infinite canvas for generating images with [OpenRouter](https://openrouter.ai) models. Text nodes hold prompts, image nodes hold results, edges say which node feeds which. Canvases, images and settings (including your API key) are stored as plain files in `data/` at the root of the repo.
+An infinite canvas for generating images with [OpenRouter](https://openrouter.ai) models. Text nodes hold prompts, image nodes hold results, edges say which node feeds which. Canvases, images and settings (including your API key) are stored as plain files in `~/.gallery/data`. Set `GALLERY_DATA_DIR` to use another folder.
 
 ## Development
 
