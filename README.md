@@ -8,7 +8,7 @@ Open the `.dmg` and drag Gallery to Applications.
 
 ## Data
 
-Canvases, images and settings (including your API key, in clear) are plain files in `~/.gallery/data`, in every mode. Set `GALLERY_DATA_DIR` to use another folder. `~/.gallery/host.json` holds the URL and pid of the running app, for tools that talk to it.
+Canvases, images and settings (including your API key, in clear) are plain files in `~/.gallery/data`, in every mode. `~/.gallery/host.json` holds the URL and pid of the running app, for tools that talk to it.
 
 ## Development
 
@@ -24,7 +24,7 @@ Build the app: `npm run electron:package` makes the `.app` in `out/`, `npm run e
 
 Stack: React, Vite, Tailwind 4, shadcn/ui, React Flow, zustand, Electron Forge. The API routes live in `src/server/routes`, served by a Vite plugin in dev and by the Electron main once packaged.
 
-Use a throwaway `GALLERY_DATA_DIR` for tests, so your real data stays untouched.
+Set `HOME` to a throwaway folder for tests, so your real data stays untouched.
 
 ## License
 
