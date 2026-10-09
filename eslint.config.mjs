@@ -3,7 +3,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig([
-  globalIgnores(['.llm/**', 'dist/**']),
+  globalIgnores(['.llm/**', 'dist/**', '.vite/**', 'out/**']),
   tseslint.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],
