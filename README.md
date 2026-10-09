@@ -1,18 +1,31 @@
 # Gallery
 
-An infinite canvas for generating images with [OpenRouter](https://openrouter.ai) models. Text nodes hold prompts, image nodes hold results, edges say which node feeds which. Canvases, images and settings (including your API key) are stored as plain files in `~/.gallery/data`. Set `GALLERY_DATA_DIR` to use another folder.
+An infinite canvas for generating images with [OpenRouter](https://openrouter.ai) models. Text nodes hold prompts, image nodes hold results, edges say which node feeds which. Add your OpenRouter API key in the settings dialog.
+
+## Install the app (macOS)
+
+Open the `.dmg` and drag Gallery to Applications.
+
+## Data
+
+Canvases, images and settings (including your API key, in clear) are plain files in `~/.gallery/data`, in every mode. Set `GALLERY_DATA_DIR` to use another folder. `~/.gallery/host.json` holds the URL and pid of the running app, for tools that talk to it.
 
 ## Development
 
-Requires Node 22 or later.
+Requires Node 22.13 or later.
 
 ```bash
 npm install
-npm run dev
+npm run dev            # in the browser, with the Vite dev server
+npm run electron:dev   # in an Electron window, with hot reload
 ```
 
-Open the URL Vite prints. Add your OpenRouter API key in the settings dialog.
+Build the app: `npm run electron:package` makes the `.app` in `out/`, `npm run electron:make` makes the `.dmg` in `out/make/`. Other scripts: `npm run build` (front build in `dist/`), `npm run lint`.
 
-Other scripts: `npm run build` (production front build in `dist/`), `npm run lint`.
+Stack: React, Vite, Tailwind 4, shadcn/ui, React Flow, zustand, Electron Forge. The API routes live in `src/server/routes`, served by a Vite plugin in dev and by the Electron main once packaged.
 
-Stack: React, Vite, Tailwind 4, shadcn/ui, React Flow, zustand. The API routes live in `src/server/routes` and are served by a Vite plugin during `npm run dev`.
+Use a throwaway `GALLERY_DATA_DIR` for tests, so your real data stays untouched.
+
+## License
+
+[MIT](LICENSE)
