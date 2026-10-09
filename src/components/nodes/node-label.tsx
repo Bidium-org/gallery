@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, useState, type KeyboardEvent } from 'react'
 import { Pencil, type LucideIcon } from 'lucide-react'
 

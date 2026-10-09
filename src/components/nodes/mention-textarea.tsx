@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react'
 import { Image as ImageIcon, Text } from 'lucide-react'
 

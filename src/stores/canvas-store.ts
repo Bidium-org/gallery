@@ -1,5 +1,3 @@
-'use client'
-
 import {
   applyEdgeChanges,
   applyNodeChanges,
@@ -73,6 +71,7 @@ export type CanvasStoreState = {
   clipboard: Subgraph | null
   initialize: () => Promise<void>
   fetchCanvasList: () => Promise<void>
+  flushSave: () => Promise<void>
   newCanvas: () => Promise<void>
   loadCanvas: (id: string) => Promise<void>
   renameCanvas: (id: string, name: string) => Promise<void>
@@ -281,6 +280,8 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
         console.error('canvas_list_failed', error)
       }
     },
+
+    flushSave,
 
     newCanvas: async () => {
       await flushSave()
@@ -787,7 +788,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
         const existingLabels = get().nodes.map((node) => node.data.label)
         void nameGeneration(prompt, existingLabels).then((name) => {
           if (!name || !isCurrentCanvas() || !artifactExists(outputId)) return
-          const artifactIds = new Set([outputId, ...extraIds])
+          const artifactIds = new Set<string>([outputId, ...extraIds])
           pushHistory()
           set((state) => ({
             nodes: state.nodes.map((node) =>

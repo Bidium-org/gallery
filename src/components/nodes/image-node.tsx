@@ -1,5 +1,3 @@
-'use client'
-
 import { memo, useCallback } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { Image as ImageIcon, Download, Loader2 } from 'lucide-react'
@@ -52,7 +50,6 @@ export const ImageNode = memo(({ id, data, selected }: NodeProps<CanvasImageNode
         </div>
       ) : (
         <div className="relative">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
             alt={label}

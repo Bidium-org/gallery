@@ -1,5 +1,3 @@
-'use client'
-
 import { useStore } from 'zustand'
 import { createStore } from 'zustand/vanilla'
 

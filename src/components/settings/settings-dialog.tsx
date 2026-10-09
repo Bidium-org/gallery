@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 import { Bot, Keyboard, type LucideIcon } from 'lucide-react'
 
