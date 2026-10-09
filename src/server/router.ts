@@ -1,3 +1,7 @@
+import { guard } from './guard'
+import * as agentCommand from './routes/agent/command/route'
+import * as agentReply from './routes/agent/reply/route'
+import * as agentStream from './routes/agent/stream/route'
 import * as canvasList from './routes/canvas/route'
 import * as canvasById from './routes/canvas/[id]/route'
 import * as generate from './routes/generate/route'
@@ -12,6 +16,9 @@ type Handler = (request: Request, context: { params: Promise<Record<string, stri
 type RouteModule = Partial<Record<string, Handler>>
 
 const table: [string, unknown][] = [
+  ['/api/agent/command', agentCommand],
+  ['/api/agent/reply', agentReply],
+  ['/api/agent/stream', agentStream],
   ['/api/canvas', canvasList],
   ['/api/canvas/:id', canvasById],
   ['/api/generate', generate],
@@ -29,6 +36,9 @@ const compiled = table.map(([pattern, mod]) => ({
 }))
 
 export async function handle(request: Request): Promise<Response> {
+  const refused = guard(request)
+  if (refused) return refused
+
   const { pathname } = new URL(request.url)
   for (const { regex, mod } of compiled) {
     const match = regex.exec(pathname)

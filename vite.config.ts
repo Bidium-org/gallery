@@ -1,12 +1,39 @@
+import type { AddressInfo } from 'node:net'
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 
+// Address Vite really listens on (it may be `[::1]` only), as a URL a client can use as is.
+function hostUrl({ address, family, port }: AddressInfo): string {
+  if (address === '::' || address === '0.0.0.0') return `http://127.0.0.1:${port}`
+  return `http://${family === 'IPv6' ? `[${address}]` : address}:${port}`
+}
+
 function apiPlugin(): Plugin {
+  let removeHostFile: (() => Promise<void>) | undefined
+  // Vite closes the server on SIGTERM but not on SIGINT (Ctrl-C), which would leave the file stale.
+  const onSigint = async () => {
+    await removeHostFile?.()
+    process.exit(130)
+  }
+
   return {
     name: 'gallery-api',
+    apply: 'serve',
     configureServer(server) {
+      process.once('SIGINT', onSigint)
+      server.httpServer?.once('listening', async () => {
+        // Loaded once here: `closeBundle` runs while the server shuts down, too late for `ssrLoadModule`.
+        try {
+          const hostFile = await server.ssrLoadModule('/src/server/host-file.ts')
+          await hostFile.writeHostFile(hostUrl(server.httpServer!.address() as AddressInfo))
+          removeHostFile = hostFile.removeHostFile
+        } catch (error) {
+          // Discovery is optional: the dev server must start even when `~/.gallery` is not writable.
+          console.error('host_file_write_failed', error)
+        }
+      })
       server.middlewares.use(async (req, res, next) => {
         if (!req.url?.startsWith('/api/')) return next()
         const { handle } = await server.ssrLoadModule('/src/server/router.ts')
@@ -19,6 +46,10 @@ function apiPlugin(): Plugin {
           await sendResponse(res, Response.json({ error: 'Internal error' }, { status: 500 }))
         }
       })
+    },
+    async closeBundle() {
+      process.off('SIGINT', onSigint)
+      await removeHostFile?.()
     },
   }
 }

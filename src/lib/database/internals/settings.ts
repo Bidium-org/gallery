@@ -38,6 +38,7 @@ export async function updateSettings(partial: Partial<Settings>): Promise<Settin
   return withSettingsLock(async () => {
     const settings = { ...(await getSettings()), ...partial }
 
+    await fs.mkdir(DATA_DIR, { recursive: true })
     const tempPath = `${SETTINGS_FILE}.${Date.now()}.tmp`
     await fs.writeFile(tempPath, JSON.stringify(settings, null, 2), 'utf-8')
     await fs.rename(tempPath, SETTINGS_FILE)

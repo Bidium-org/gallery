@@ -7,6 +7,9 @@ import { createRoot } from 'react-dom/client'
 
 import { Canvas } from '@/components/canvas'
 import { Toaster } from '@/components/ui/sonner'
+import { startAgentRelay } from '@/lib/agent-relay'
+
+startAgentRelay()
 
 createRoot(document.getElementById('root')!).render(
   <>
