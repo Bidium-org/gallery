@@ -75,7 +75,7 @@ export type CanvasStoreState = {
   fetchCanvasList: () => Promise<void>
   newCanvas: () => Promise<void>
   loadCanvas: (id: string) => Promise<void>
-  renameCurrentCanvas: (name: string) => Promise<void>
+  renameCanvas: (id: string, name: string) => Promise<void>
   removeCanvas: (id: string) => Promise<void>
   setViewport: (viewport: Viewport) => void
   onNodesChange: (changes: NodeChange<CanvasNode>[]) => void
@@ -105,6 +105,7 @@ const ARTIFACT_STACK_GAP = 260
 const FALLBACK_NODE_WIDTH = 300
 const SAVE_DEBOUNCE_MS = 800
 const PASTE_OFFSET = 40
+const INTERNAL_CLIPBOARD_MARKER = 'image-canvas:nodes'
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null
 let promotionPromise: Promise<void> | null = null
@@ -310,18 +311,35 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       }
     },
 
-    renameCurrentCanvas: async (name) => {
+    renameCanvas: async (id, name) => {
       const trimmed = name.trim()
-      if (!trimmed || trimmed === get().canvasName) return
+      if (!trimmed) return
 
-      const { canvasId } = get()
+      const existing = get().canvasList.find((meta) => meta.id === id)
+      if (!existing || existing.name === trimmed) return
+
       set((state) => ({
-        canvasName: trimmed,
         canvasList: state.canvasList.map((meta) =>
-          meta.id === canvasId ? { ...meta, name: trimmed } : meta,
+          meta.id === id ? { ...meta, name: trimmed } : meta,
         ),
+        ...(state.canvasId === id ? { canvasName: trimmed } : {}),
       }))
-      scheduleSave()
+
+      if (get().canvasId === id) {
+        scheduleSave()
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/canvas/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: trimmed }),
+        })
+        if (!response.ok) throw new Error('rename failed')
+      } catch (error) {
+        console.error('canvas_rename_failed', id, error)
+      }
     },
 
     removeCanvas: async (id) => {
@@ -766,7 +784,8 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
         }))
         scheduleSave()
 
-        void nameGeneration(prompt).then((name) => {
+        const existingLabels = get().nodes.map((node) => node.data.label)
+        void nameGeneration(prompt, existingLabels).then((name) => {
           if (!name || !isCurrentCanvas() || !artifactExists(outputId)) return
           const artifactIds = new Set([outputId, ...extraIds])
           pushHistory()
@@ -811,7 +830,11 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
 
     copySelection: () => {
       const selection = extractSelection(get().nodes, get().edges)
-      if (selection) set({ clipboard: selection })
+      if (!selection) return
+      set({ clipboard: selection })
+      navigator.clipboard
+        .writeText(INTERNAL_CLIPBOARD_MARKER)
+        .catch(() => undefined)
     },
 
     pasteClipboard: () => {

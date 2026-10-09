@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { NodeProps } from '@xyflow/react'
-import { ChevronDown, ChevronLeft, ChevronRight, Plus, Text } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Text } from 'lucide-react'
 
 import { ParamField } from '@/components/models/param-field'
 import { BaseNode, nodeBoxClass } from '@/components/nodes/base-node'
@@ -41,25 +41,32 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-function renderContent(content: string, labels: string[]): ReactNode {
-  const known = labels.filter((item) => content.includes(`@${item}`))
+function renderContent(content: string, citableNodes: CitableNode[]): ReactNode {
+  const typeByLabel = new Map(
+    citableNodes.map((node) => [node.label, node.type]),
+  )
+  const known = [...typeByLabel.keys()].filter((label) =>
+    content.includes(`@${label}`),
+  )
   if (known.length === 0) return content
 
   const regex = new RegExp(`@(${known.map(escapeRegex).join('|')})`, 'g')
   const parts = content.split(regex)
 
-  return parts.map((part, index) =>
-    index % 2 === 1 ? (
+  return parts.map((part, index) => {
+    if (index % 2 === 0) return part
+
+    const type = typeByLabel.get(part)
+    return (
       <Badge
         key={index}
         className="mx-0.5 h-[18px] border-sky-500/30 bg-sky-500/15 px-1.5 align-baseline text-[11px] text-sky-300"
       >
-        @{part}
+        {type === 'image' ? <ImageIcon /> : <Text />}
+        {part}
       </Badge>
-    ) : (
-      part
-    ),
-  )
+    )
+  })
 }
 
 export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>) => {
@@ -87,6 +94,7 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
   )
   const [draft, setDraft] = useState<string | null>(null)
   const editingRef = useRef<HTMLDivElement>(null)
+  const displayRef = useRef<HTMLDivElement>(null)
 
   const isEditing = draft !== null
   const defaultModel =
@@ -137,6 +145,20 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
     document.addEventListener('pointerdown', onPointerDown, true)
     return () => document.removeEventListener('pointerdown', onPointerDown, true)
   }, [isEditing, save])
+
+  useEffect(() => {
+    const element = displayRef.current
+    if (!element) return
+
+    const onWheel = (event: WheelEvent) => {
+      if (element.scrollHeight > element.clientHeight) {
+        event.stopPropagation()
+      }
+    }
+
+    element.addEventListener('wheel', onWheel)
+    return () => element.removeEventListener('wheel', onWheel)
+  }, [isEditing])
 
   const flushDraft = useCallback(() => {
     if (draft === null) return
@@ -298,11 +320,12 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
         </div>
       ) : (
         <div
+          ref={displayRef}
           onDoubleClick={startEditing}
-          className={`cursor-grab rounded-lg border bg-neutral-900 p-3 text-xs leading-relaxed whitespace-pre-wrap text-neutral-300 active:cursor-grabbing ${boxClass}`}
+          className={`max-h-[400px] cursor-grab overflow-y-auto rounded-lg border bg-neutral-900 p-3 text-xs leading-relaxed whitespace-pre-wrap text-neutral-300 active:cursor-grabbing ${boxClass}`}
         >
           {prompt ? (
-            renderContent(prompt, citableNodes.map((node) => node.label))
+            renderContent(prompt, citableNodes)
           ) : (
             <span className="text-neutral-600">Double-click to edit…</span>
           )}

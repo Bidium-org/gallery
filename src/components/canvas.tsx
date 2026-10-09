@@ -1,22 +1,30 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import {
   ReactFlow,
   ReactFlowProvider,
   Background,
   BackgroundVariant,
-  Controls,
   Panel,
   SelectionMode,
   useReactFlow,
 } from '@xyflow/react'
+import { ImageUp, Plus, Text } from 'lucide-react'
 
 import { ImageNode } from './nodes/image-node'
 import { TextNode } from './nodes/text-node'
 import { ErrorNode } from './nodes/error-node'
 import { SideBar } from './sidebar'
+import { Button } from '@/components/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { useCanvasPaste } from '@/hooks/use-canvas-paste'
 import { useCanvasShortcuts } from '@/hooks/use-canvas-shortcuts'
+import { uploadImages } from '@/lib/upload-images'
 import { isEdgeVisible } from '@/lib/versioning'
 import { useCanvasStore } from '@/stores/canvas-store'
 
@@ -27,17 +35,6 @@ const nodeTypes = {
 }
 
 const isFileDrag = (event: DragEvent) => event.dataTransfer.types.includes('Files')
-
-async function uploadImages(files: File[]): Promise<{ name: string; url: string }[]> {
-  const formData = new FormData()
-  for (const file of files) formData.append('files', file)
-
-  const response = await fetch('/api/images', { method: 'POST', body: formData })
-  if (!response.ok) throw new Error('Image upload failed')
-
-  const { images } = (await response.json()) as { images: { url: string }[] }
-  return images.map((image, index) => ({ name: files[index].name, url: image.url }))
-}
 
 function Flow() {
   const {
@@ -54,6 +51,7 @@ function Flow() {
     addDroppedImages,
   } = useCanvasStore((state) => state)
   useCanvasShortcuts()
+  useCanvasPaste()
 
   const selectedNodeIds = new Set(
     nodes.filter((node) => node.selected).map((node) => node.id),
@@ -74,6 +72,7 @@ function Flow() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const dragDepth = useRef(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const appliedCanvasRef = useRef<string | null | undefined>(undefined)
   const { screenToFlowPosition, setViewport: applyViewport } = useReactFlow()
 
@@ -86,6 +85,15 @@ function Flow() {
     appliedCanvasRef.current = canvasId
     void applyViewport(viewport)
   }, [canvasId, viewport, applyViewport])
+
+  const viewportCenter = useCallback(
+    () =>
+      screenToFlowPosition({
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      }),
+    [screenToFlowPosition],
+  )
 
   const onDragEnter = useCallback((event: DragEvent) => {
     if (!isFileDrag(event)) return
@@ -128,13 +136,30 @@ function Flow() {
   )
 
   const addTextAtCenter = useCallback(() => {
-    const position = screenToFlowPosition({
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
-    })
-    addTextNode(position)
+    addTextNode(viewportCenter())
     setMenuOpen(false)
-  }, [screenToFlowPosition, addTextNode])
+  }, [viewportCenter, addTextNode])
+
+  const openFilePicker = useCallback(() => {
+    setMenuOpen(false)
+    fileInputRef.current?.click()
+  }, [])
+
+  const onFilesPicked = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(event.target.files ?? []).filter((file) =>
+        file.type.startsWith('image/'),
+      )
+      event.target.value = ''
+      if (files.length === 0) return
+
+      const position = viewportCenter()
+      uploadImages(files)
+        .then((uploaded) => addDroppedImages(uploaded, position))
+        .catch((error) => console.error('image_upload_failed', error))
+    },
+    [viewportCenter, addDroppedImages],
+  )
 
   return (
     <div
@@ -144,6 +169,14 @@ function Flow() {
       onDragEnter={onDragEnter}
       onDragLeave={onDragLeave}
     >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={onFilesPicked}
+        className="hidden"
+      />
       <ReactFlow
         nodes={nodes}
         edges={displayEdges}
@@ -166,27 +199,43 @@ function Flow() {
         proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} color="#333" />
-        <Controls />
         <SideBar />
         <Panel position="bottom-center" className="mb-6">
-          <div className="relative">
-            {menuOpen && (
-              <div className="absolute bottom-full left-1/2 mb-2 flex -translate-x-1/2 gap-1 rounded-lg border border-neutral-800 bg-neutral-900 p-1 shadow-xl">
-                <button
-                  onClick={addTextAtCenter}
-                  className="rounded-md px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800"
-                >
-                  Text
-                </button>
-              </div>
-            )}
-            <button
-              onClick={() => setMenuOpen((open) => !open)}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900 text-lg text-neutral-400 shadow-xl hover:bg-neutral-800 hover:text-neutral-200"
+          <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                aria-label="Add node"
+                className="h-11 w-11 rounded-full border-neutral-700 bg-neutral-900 text-neutral-300 shadow-xl hover:bg-neutral-800 hover:text-white [&_svg]:size-5"
+              >
+                <Plus />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="top"
+              align="center"
+              className="w-[160px] gap-0.5 border-neutral-800 bg-neutral-950 p-1.5"
             >
-              +
-            </button>
-          </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start"
+                onClick={openFilePicker}
+              >
+                <ImageUp />
+                File
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start"
+                onClick={addTextAtCenter}
+              >
+                <Text />
+                Text
+              </Button>
+            </PopoverContent>
+          </Popover>
         </Panel>
       </ReactFlow>
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState, type KeyboardEvent } from 'react'
-import type { LucideIcon } from 'lucide-react'
+import { Pencil, type LucideIcon } from 'lucide-react'
 
 export function NodeLabel({
   icon: Icon,
@@ -35,7 +35,7 @@ export function NodeLabel({
     : (className ?? 'text-neutral-400')
 
   return (
-    <div className={`flex min-w-0 flex-1 items-center gap-1.5 text-xs ${colorClass}`}>
+    <div className={`group flex min-w-0 flex-1 items-center gap-1.5 text-xs ${colorClass}`}>
       <Icon className="h-3.5 w-3.5 shrink-0" />
       {draft !== null ? (
         <input
@@ -47,9 +47,18 @@ export function NodeLabel({
           className="nodrag w-full rounded border border-neutral-700 bg-neutral-900 px-1 py-0.5 text-xs text-neutral-200 outline-none"
         />
       ) : (
-        <span onDoubleClick={() => setDraft(label)} className="truncate">
-          {label}
-        </span>
+        <>
+          <span onDoubleClick={() => setDraft(label)} className="truncate">
+            {label}
+          </span>
+          <button
+            onClick={() => setDraft(label)}
+            aria-label={`Rename ${label}`}
+            className="nodrag shrink-0 text-neutral-500 opacity-0 transition-opacity group-hover:opacity-100 hover:text-neutral-200"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+        </>
       )}
     </div>
   )
