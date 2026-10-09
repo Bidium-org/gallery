@@ -8,8 +8,11 @@ import { createRoot } from 'react-dom/client'
 import { Canvas } from '@/components/canvas'
 import { Toaster } from '@/components/ui/sonner'
 import { startAgentRelay } from '@/lib/agent-relay'
+import { canvasStore } from '@/stores/canvas-store'
 
 startAgentRelay()
+// Called by the Electron main before it quits: the autosave is debounced, an edit would be lost.
+window.__galleryFlushSave = () => canvasStore.getState().flushSave()
 
 createRoot(document.getElementById('root')!).render(
   <>

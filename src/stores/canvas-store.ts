@@ -73,6 +73,7 @@ export type CanvasStoreState = {
   clipboard: Subgraph | null
   initialize: () => Promise<void>
   fetchCanvasList: () => Promise<void>
+  flushSave: () => Promise<void>
   newCanvas: () => Promise<void>
   loadCanvas: (id: string) => Promise<void>
   renameCanvas: (id: string, name: string) => Promise<void>
@@ -281,6 +282,8 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
         console.error('canvas_list_failed', error)
       }
     },
+
+    flushSave,
 
     newCanvas: async () => {
       await flushSave()

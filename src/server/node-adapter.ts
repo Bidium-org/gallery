@@ -28,3 +28,19 @@ export async function sendResponse(res: ServerResponse, response: Response): Pro
   }
   res.end()
 }
+
+// Runs the shared router on a Node request, for both hosts (Vite plugin and Electron main).
+// Never throws: a failure answers a 500, or closes the response when it already started.
+export async function serveApi(
+  handle: (request: Request) => Promise<Response>,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  try {
+    await sendResponse(res, await handle(await toRequest(req)))
+  } catch (error) {
+    console.error('api_request_failed', req.method, req.url, error)
+    if (res.headersSent) return void res.end()
+    await sendResponse(res, Response.json({ error: 'Internal error' }, { status: 500 }))
+  }
+}
