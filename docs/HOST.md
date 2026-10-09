@@ -30,6 +30,12 @@ src/lib/database/
 
 The guard protects against browsers, not against processes: `Host` must be `127.0.0.1`, `localhost` or `[::1]` (anti DNS rebinding), and an `Origin`, when present, must equal the `Host`. A request with no `Origin` (curl, the future agent client) passes. There is no secret, on purpose.
 
+## Growth path
+
+The router is hand-rolled on purpose: ~50 lines, no dependency, handlers are plain `Request → Response`. Keep it while the table stays small (~12 routes today).
+
+Move to [Hono](https://hono.dev) when the table passes ~30 routes, or when several middlewares are needed (the guard hard-wired in `handle()` stops scaling). Hono is built on `Request`/`Response`, so handlers move over almost unchanged; `@hono/node-server` replaces `node-adapter.ts`. Ignore Express and Fastify: they use their own request objects and would force rewriting every handler.
+
 ## Disk
 
 ```
