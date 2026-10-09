@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, useState, type KeyboardEvent } from 'react'
 import { Panel } from '@xyflow/react'
 import { ChevronDown, Pencil, Plus, Settings, Trash2 } from 'lucide-react'

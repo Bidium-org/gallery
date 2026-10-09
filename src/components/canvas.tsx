@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import {
   ReactFlow,

@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, type ReactNode } from 'react'
 import { Handle, Position } from '@xyflow/react'
 import type { LucideIcon } from 'lucide-react'

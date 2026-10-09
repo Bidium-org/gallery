@@ -1,5 +1,3 @@
-'use client'
-
 import { memo, useCallback } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { Image as ImageIcon, Download, Loader2 } from 'lucide-react'

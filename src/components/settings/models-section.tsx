@@ -1,5 +1,3 @@
-'use client'
-
 import { AlertTriangle, Check, Loader2, RefreshCw } from 'lucide-react'
 
 import { ModelPicker } from '@/components/nodes/model-picker'

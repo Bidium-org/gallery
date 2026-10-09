@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 import { AlertTriangle, Check, Loader2 } from 'lucide-react'
 

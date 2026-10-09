@@ -1,5 +1,3 @@
-'use client'
-
 import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { ChevronDown, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Text } from 'lucide-react'
