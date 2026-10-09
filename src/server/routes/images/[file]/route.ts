@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server'
 
 import { readImage } from '@/lib/database'
 
@@ -21,17 +20,17 @@ export async function GET(
   try {
     const buffer = await readImage(file)
     if (!buffer) {
-      return NextResponse.json({ error: 'Image not found' }, { status: 404 })
+      return Response.json({ error: 'Image not found' }, { status: 404 })
     }
 
     const extension = file.split('.').pop()?.toLowerCase() ?? ''
     const contentType = MIME_BY_EXTENSION[extension] ?? 'application/octet-stream'
 
-    return new NextResponse(new Uint8Array(buffer), {
+    return new Response(new Uint8Array(buffer), {
       headers: { 'Content-Type': contentType, 'Cache-Control': 'immutable' },
     })
   } catch (error) {
     console.error('image_read_failed', file, error)
-    return NextResponse.json({ error: 'Failed to read image' }, { status: 500 })
+    return Response.json({ error: 'Failed to read image' }, { status: 500 })
   }
 }

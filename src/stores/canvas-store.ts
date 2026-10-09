@@ -787,7 +787,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
         const existingLabels = get().nodes.map((node) => node.data.label)
         void nameGeneration(prompt, existingLabels).then((name) => {
           if (!name || !isCurrentCanvas() || !artifactExists(outputId)) return
-          const artifactIds = new Set([outputId, ...extraIds])
+          const artifactIds = new Set<string>([outputId, ...extraIds])
           pushHistory()
           set((state) => ({
             nodes: state.nodes.map((node) =>

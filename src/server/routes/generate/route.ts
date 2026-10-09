@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server'
 
 import { OPENROUTER_BASE_URL } from '@/lib/constants'
 import { getSettings, saveImage } from '@/lib/database'
@@ -12,7 +11,7 @@ export async function POST(request: Request) {
   const { openRouterApiKey } = await getSettings()
 
   if (!openRouterApiKey) {
-    return NextResponse.json(
+    return Response.json(
       { error: 'No API key configured — open Settings' },
       { status: 500 },
     )
@@ -21,7 +20,7 @@ export async function POST(request: Request) {
   const payload = (await request.json()) as ImageGenerationRequest
 
   if (!payload.model || !payload.prompt) {
-    return NextResponse.json(
+    return Response.json(
       { error: 'model and prompt are required' },
       { status: 400 },
     )
@@ -48,7 +47,7 @@ export async function POST(request: Request) {
       } catch {
       }
 
-      return NextResponse.json({ error: message }, { status: 502 })
+      return Response.json({ error: message }, { status: 502 })
     }
 
     const result = (await response.json()) as ImageGenerationResponse
@@ -67,10 +66,10 @@ export async function POST(request: Request) {
 
     const body: GenerateApiResponse = { images, usage: result.usage }
 
-    return NextResponse.json(body)
+    return Response.json(body)
   } catch (error) {
     console.error('openrouter_generation_failed', error)
-    return NextResponse.json(
+    return Response.json(
       { error: 'Image generation failed' },
       { status: 502 },
     )

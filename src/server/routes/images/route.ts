@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server'
 
 import { saveImage } from '@/lib/database'
 
@@ -23,7 +22,7 @@ export async function POST(request: Request) {
     const files = formData.getAll('files').filter((entry): entry is File => entry instanceof File)
 
     if (files.length === 0) {
-      return NextResponse.json({ error: 'files are required' }, { status: 400 })
+      return Response.json({ error: 'files are required' }, { status: 400 })
     }
 
     const images = await Promise.all(
@@ -37,10 +36,10 @@ export async function POST(request: Request) {
       }),
     )
 
-    return NextResponse.json({ images })
+    return Response.json({ images })
   } catch (error) {
     console.error('image_upload_failed', error)
-    return NextResponse.json(
+    return Response.json(
       { error: 'Failed to save images' },
       { status: 500 },
     )

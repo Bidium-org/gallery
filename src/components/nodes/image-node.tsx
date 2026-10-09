@@ -52,7 +52,6 @@ export const ImageNode = memo(({ id, data, selected }: NodeProps<CanvasImageNode
         </div>
       ) : (
         <div className="relative">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
             alt={label}

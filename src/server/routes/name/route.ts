@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server'
 
 import { NAMING_MODEL, OPENROUTER_BASE_URL } from '@/lib/constants'
 import { getSettings } from '@/lib/database'
@@ -11,7 +10,7 @@ export async function POST(request: Request) {
   const { openRouterApiKey } = await getSettings()
 
   if (!openRouterApiKey) {
-    return NextResponse.json(
+    return Response.json(
       { error: 'No API key configured — open Settings' },
       { status: 500 },
     )
@@ -23,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   if (!prompt) {
-    return NextResponse.json({ error: 'prompt is required' }, { status: 400 })
+    return Response.json({ error: 'prompt is required' }, { status: 400 })
   }
 
   const taken = (existingLabels ?? []).filter(Boolean)
@@ -55,15 +54,15 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const body = await response.text()
       console.error('openrouter_naming_failed', response.status, body)
-      return NextResponse.json({ error: 'Naming failed' }, { status: 502 })
+      return Response.json({ error: 'Naming failed' }, { status: 502 })
     }
 
     const result = (await response.json()) as ChatCompletionsResponse
     const name = result.choices[0]?.message.content.trim() ?? ''
 
-    return NextResponse.json({ name })
+    return Response.json({ name })
   } catch (error) {
     console.error('openrouter_naming_failed', error)
-    return NextResponse.json({ error: 'Naming failed' }, { status: 502 })
+    return Response.json({ error: 'Naming failed' }, { status: 502 })
   }
 }

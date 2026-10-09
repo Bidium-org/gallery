@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server'
 
 import { OPENROUTER_BASE_URL } from '@/lib/constants'
 import { getSettings } from '@/lib/database'
@@ -8,7 +7,7 @@ export async function GET() {
   const { openRouterApiKey } = await getSettings()
 
   if (!openRouterApiKey) {
-    return NextResponse.json(
+    return Response.json(
       { error: 'No API key configured — open Settings' },
       { status: 500 },
     )
@@ -22,7 +21,7 @@ export async function GET() {
     if (!response.ok) {
       const body = await response.text()
       console.error('openrouter_models_fetch_failed', response.status, body)
-      return NextResponse.json(
+      return Response.json(
         { error: 'Failed to fetch image models' },
         { status: 502 },
       )
@@ -33,10 +32,10 @@ export async function GET() {
       model.architecture.output_modalities.includes('image'),
     )
 
-    return NextResponse.json({ data: models })
+    return Response.json({ data: models })
   } catch (error) {
     console.error('openrouter_models_fetch_failed', error)
-    return NextResponse.json(
+    return Response.json(
       { error: 'Failed to fetch image models' },
       { status: 502 },
     )
