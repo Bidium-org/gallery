@@ -2,7 +2,7 @@ import { memo, useCallback } from 'react'
 import type { NodeProps } from '@xyflow/react'
 import { Image as ImageIcon, Download, Loader2 } from 'lucide-react'
 
-import { BaseNode, nodeBoxClass } from '@/components/nodes/base-node'
+import { BaseNode, useNodeBoxClass } from '@/components/nodes/base-node'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { CanvasImageNode } from '@/types/TCanvasNode'
@@ -32,7 +32,7 @@ export const ImageNode = memo(({ id, data, selected }: NodeProps<CanvasImageNode
     void downloadImage(imageUrl, label)
   }, [imageUrl, label])
 
-  const boxClass = nodeBoxClass(selected, 'border-neutral-800')
+  const boxClass = useNodeBoxClass(id, selected, 'border-neutral-800')
 
   return (
     <BaseNode

@@ -5,15 +5,22 @@ import type { LucideIcon } from 'lucide-react'
 import { NodeLabel } from '@/components/nodes/node-label'
 import { NodeShortcuts } from '@/components/nodes/node-shortcuts'
 import type { Shortcut } from '@/lib/shortcuts'
+import { useAgentHighlight } from '@/stores/agent-highlight-store'
 import { useCanvasStore } from '@/stores/canvas-store'
 import { useSettingsStore } from '@/stores/settings-store'
 
 const HANDLE_BASE_CLASS = '!h-3 !w-3 transition-colors'
 
-export function nodeBoxClass(
+export function useNodeBoxClass(
+  id: string,
   selected: boolean | undefined,
   defaultClass: string,
 ): string {
+  const highlight = useAgentHighlight(id)
+  if (highlight === 'running') {
+    return 'animate-pulse border-amber-400 ring-2 ring-amber-400/40'
+  }
+  if (highlight === 'held') return 'border-amber-400 ring-2 ring-amber-400/40'
   return selected ? 'border-sky-500 ring-2 ring-sky-500/40' : defaultClass
 }
 

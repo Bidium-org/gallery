@@ -3,7 +3,7 @@ import type { NodeProps } from '@xyflow/react'
 import { ChevronDown, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Text } from 'lucide-react'
 
 import { ParamField } from '@/components/models/param-field'
-import { BaseNode, nodeBoxClass } from '@/components/nodes/base-node'
+import { BaseNode, useNodeBoxClass } from '@/components/nodes/base-node'
 import { ModelPicker } from '@/components/nodes/model-picker'
 import {
   MentionTextarea,
@@ -108,7 +108,7 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
       type: node.type,
     }))
 
-  const boxClass = nodeBoxClass(selected, 'border-neutral-800')
+  const boxClass = useNodeBoxClass(id, selected, 'border-neutral-800')
 
   const startEditing = useCallback(() => setDraft(prompt), [prompt])
 
