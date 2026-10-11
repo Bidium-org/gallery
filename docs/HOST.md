@@ -31,7 +31,7 @@ src/lib/database/
 
 `POST /api/agent/command` answers 400 `invalid_json` for a body that is not JSON, and 400 `invalid_request` for a JSON body without `name`.
 
-The guard protects against browsers, not against processes: `Host` must be `127.0.0.1`, `localhost` or `[::1]` (anti DNS rebinding), and an `Origin`, when present, must equal the `Host`. A request with no `Origin` (curl, the future agent client) passes. There is no secret, on purpose.
+The guard stops browsers only (`Host` and `Origin` checks). What it does not stop, and why there is no secret: `docs/SECURITY.md`.
 
 ## Growth path
 
@@ -62,7 +62,7 @@ Move to [Hono](https://hono.dev) when the table passes ~30 routes, or when sever
 - The filename is `<uuid>.<ext>`; the extension comes from the uploaded file name, else its MIME type. Reads accept only `^[\w-]+\.\w+$`, which blocks path traversal.
 - The image types (`MIME_BY_EXTENSION`, the one list the others derive from) and `resolveExtension` live in `src/lib/database/internals/images.ts`, shared by the upload route and the agent.
 - A canvas references an image by the URL `/api/images/<file>` stored in its image nodes.
-- The agent command `add_image` reads local files on the host (`src/server/routes/agent/images.ts`): image extensions only, 50 MB per file, every file checked before any is written, and only with a renderer connected. Images go back to the agent as an absolute `path` (`imagePath`), never as a URL.
+- The agent command `add_image` reads local files on the host (`src/server/routes/agent/images.ts`): image extensions only (by name, not content; why: `docs/SECURITY.md`), 50 MB per file, every file checked before any is written, and only with a renderer connected. Images go back to the agent as an absolute `path` (`imagePath`), never as a URL.
 - Files are deleted only when their canvas is deleted (`deleteCanvas()` removes the files its image nodes point to). Deleting a node leaves its file on disk.
 
 ## Settings and API key
