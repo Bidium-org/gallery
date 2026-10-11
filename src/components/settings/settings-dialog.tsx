@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Bot, Keyboard, type LucideIcon } from 'lucide-react'
+import { Bot, Keyboard, Plug, type LucideIcon } from 'lucide-react'
 
+import { AgentSection } from '@/components/settings/agent-section'
 import { ModelsSection } from '@/components/settings/models-section'
 import { ShortcutsSection } from '@/components/settings/shortcuts-section'
 import { Button } from '@/components/ui/button'
@@ -12,11 +13,12 @@ import {
 } from '@/components/ui/dialog'
 import { useSettingsStore } from '@/stores/settings-store'
 
-type Section = 'models' | 'shortcuts'
+type Section = 'models' | 'shortcuts' | 'agent'
 
 const NAV_ITEMS: { id: Section; label: string; icon: LucideIcon }[] = [
   { id: 'models', label: 'Models', icon: Bot },
   { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
+  { id: 'agent', label: 'Agent', icon: Plug },
 ]
 
 export function SettingsDialog() {
@@ -56,6 +58,7 @@ export function SettingsDialog() {
           <div className="min-w-0 flex-1 overflow-y-auto p-6">
             {activeSection === 'models' && <ModelsSection />}
             {activeSection === 'shortcuts' && <ShortcutsSection />}
+            {activeSection === 'agent' && <AgentSection />}
           </div>
         </div>
       </DialogContent>
