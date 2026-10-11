@@ -1,6 +1,6 @@
 import { connectAgents, listAgents } from "@/server/agent/connect";
 
-import { succeed } from "../answer";
+import { succeed } from "@/server/agent/answer";
 
 export async function GET() {
   return succeed({ agents: await listAgents() });

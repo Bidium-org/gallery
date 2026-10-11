@@ -5,9 +5,9 @@ import {
   parseCommandArgs,
 } from "@/lib/agent/catalog";
 
-import { fail, succeed } from "../answer";
-import { dispatch, hasRenderer } from "../hub";
-import { HostStepError, prepareAddImage, withImagePaths } from "../images";
+import { fail, succeed } from "@/server/agent/answer";
+import { dispatch, hasRenderer } from "@/server/agent/hub";
+import { HostStepError, prepareAddImage, withImagePaths } from "@/server/agent/images";
 
 function statusOf(code: string): number {
   if (code === "invalid_args" || code === "unknown_command") return 400;

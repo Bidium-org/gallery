@@ -1,4 +1,4 @@
-import { addClient, removeClient } from '../hub'
+import { addClient, removeClient } from '@/server/agent/hub'
 
 const HEARTBEAT_MS = 15_000
 

@@ -1,4 +1,4 @@
-import { reply } from '../hub'
+import { reply } from '@/server/agent/hub'
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {

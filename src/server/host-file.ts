@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { GALLERY_DIR } from "@/lib/database/internals/paths";
 
-import cliScript from "./agent/gallery.sh?raw";
+import cliScript from "./agent/assets/gallery.sh?raw";
 import { writeAtomic } from "./write-atomic";
 
 export const HOST_FILE = path.join(GALLERY_DIR, "host.json");

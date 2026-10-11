@@ -5,7 +5,7 @@ import path from "node:path";
 import type { AgentConnection, AgentId } from "@/types/TAgentConnect";
 
 import { writeAtomic } from "../write-atomic";
-import skill from "./skill.md?raw";
+import skill from "./assets/skill.md?raw";
 
 const HOME = os.homedir();
 const SKILL_NAME = "gallery";
