@@ -1,26 +1,16 @@
 // Renderer side of the agent relay: receives the commands pushed by the host over SSE,
 // runs them, and answers with a POST. `EventSource` reconnects by itself when the host restarts.
+import { executors } from '@/lib/agent-executors'
 import { CanvasError } from '@/lib/canvas-error'
 
 type Args = Record<string, unknown>
-type Command = (args: Args) => unknown
-
-const commands: Record<string, Command> = {
-  ping: () => 'pong',
-}
-
-// Dev only, to test timeouts and disconnections from the outside. Absent from the production build.
-if (import.meta.env.DEV) {
-  commands.sleep = ({ ms }) =>
-    new Promise((resolve) => setTimeout(() => resolve(`slept ${Number(ms ?? 1000)} ms`), Number(ms ?? 1000)))
-}
 
 type Outcome = { ok: true; result: unknown } | { ok: false; error: string; message: string }
 
 async function run(name: string, args: Args): Promise<Outcome> {
-  if (!Object.hasOwn(commands, name)) return { ok: false, error: 'unknown_command', message: `Unknown command: ${name}` }
+  if (!Object.hasOwn(executors, name)) return { ok: false, error: 'unknown_command', message: `Unknown command: ${name}` }
   try {
-    return { ok: true, result: (await commands[name](args)) ?? null }
+    return { ok: true, result: (await (executors[name as keyof typeof executors] as (args: Args) => unknown)(args)) ?? null }
   } catch (error) {
     if (error instanceof CanvasError) return { ok: false, error: error.code, message: error.message }
     return { ok: false, error: 'internal_error', message: error instanceof Error ? error.message : String(error) }

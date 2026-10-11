@@ -5,6 +5,7 @@ export type CanvasErrorCode =
   | "unknown_canvas"
   | "version_out_of_range"
   | "no_model"
+  | "unknown_model"
   | "generation_failed"
   | "generation_discarded"
   | "request_failed";

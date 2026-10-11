@@ -257,10 +257,10 @@ type CatalogEntry<N extends CommandName> = (typeof catalog)[N];
 export type CommandArgs<N extends CommandName> = z.output<
   CatalogEntry<N>["args"]
 >;
-export type RendererArgs<N extends CommandName> =
-  CatalogEntry<N> extends { relayed: infer R extends z.ZodType }
-    ? z.output<R>
-    : CommandArgs<N>;
+type Relayed<N extends CommandName> = Exclude<CatalogEntry<N>["relayed"], undefined>;
+export type RendererArgs<N extends CommandName> = [Relayed<N>] extends [never]
+  ? CommandArgs<N>
+  : z.output<Relayed<N>>;
 
 const DEV_ONLY: ReadonlySet<string> = new Set<CommandName>(["sleep"]);
 
