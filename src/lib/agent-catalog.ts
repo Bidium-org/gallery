@@ -277,6 +277,19 @@ export function commandTimeoutMs(name: CommandName): number {
   );
 }
 
+// The refusal names each wrong field: `position.x: Invalid input: expected number, received string`.
+export function parseCommandArgs(
+  name: CommandName,
+  args: unknown,
+): { ok: true; args: unknown } | { ok: false; message: string } {
+  const parsed = (catalog[name].args as z.ZodType).safeParse(args)
+  if (parsed.success) return { ok: true, args: parsed.data }
+  const message = parsed.error.issues
+    .map((issue) => (issue.path.length > 0 ? `${issue.path.join('.')}: ${issue.message}` : issue.message))
+    .join('; ')
+  return { ok: false, message }
+}
+
 export function listCommands(): { name: CommandName; description: string }[] {
   return (Object.keys(catalog) as CommandName[])
     .filter(isAvailableCommand)

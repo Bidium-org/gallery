@@ -1,5 +1,7 @@
 // Renderer side of the agent relay: receives the commands pushed by the host over SSE,
 // runs them, and answers with a POST. `EventSource` reconnects by itself when the host restarts.
+import { CanvasError } from '@/lib/canvas-error'
+
 type Args = Record<string, unknown>
 type Command = (args: Args) => unknown
 
@@ -13,12 +15,15 @@ if (import.meta.env.DEV) {
     new Promise((resolve) => setTimeout(() => resolve(`slept ${Number(ms ?? 1000)} ms`), Number(ms ?? 1000)))
 }
 
-async function run(name: string, args: Args): Promise<{ ok: true; result: unknown } | { ok: false; error: string }> {
-  if (!Object.hasOwn(commands, name)) return { ok: false, error: `Unknown command: ${name}` }
+type Outcome = { ok: true; result: unknown } | { ok: false; error: string; message: string }
+
+async function run(name: string, args: Args): Promise<Outcome> {
+  if (!Object.hasOwn(commands, name)) return { ok: false, error: 'unknown_command', message: `Unknown command: ${name}` }
   try {
-    return { ok: true, result: await commands[name](args) }
+    return { ok: true, result: (await commands[name](args)) ?? null }
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : String(error) }
+    if (error instanceof CanvasError) return { ok: false, error: error.code, message: error.message }
+    return { ok: false, error: 'internal_error', message: error instanceof Error ? error.message : String(error) }
   }
 }
 

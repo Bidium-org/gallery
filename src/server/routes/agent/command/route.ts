@@ -1,39 +1,68 @@
-import { dispatch } from '../hub'
+import {
+  commandTimeoutMs,
+  isAvailableCommand,
+  parseCommandArgs,
+} from "@/lib/agent-catalog";
 
-const DEFAULT_TIMEOUT_MS = 10_000
+import { fail, succeed } from "../answer";
+import { dispatch } from "../hub";
+
+function statusOf(code: string): number {
+  if (code === "invalid_args" || code === "unknown_command") return 400;
+  if (code === "internal_error") return 500;
+  return 422;
+}
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
-    name?: unknown
-    args?: unknown
-    timeoutMs?: unknown
-  } | null
-  if (typeof body?.name !== 'string' || !body.name) {
-    return Response.json({ ok: false, error: 'invalid_request', message: '`name` is required.' }, { status: 400 })
+    name?: unknown;
+    args?: unknown;
+    timeoutMs?: unknown;
+  } | null;
+  if (typeof body?.name !== "string" || !body.name) {
+    return fail("invalid_request", "`name` is required.", 400);
   }
-  const timeoutMs =
-    typeof body.timeoutMs === 'number' && body.timeoutMs > 0 ? body.timeoutMs : DEFAULT_TIMEOUT_MS
+  if (!isAvailableCommand(body.name)) {
+    return fail(
+      "unknown_command",
+      `Unknown command: ${body.name}. List them with the commands endpoint.`,
+      400,
+    );
+  }
 
-  const outcome = await dispatch(body.name, body.args ?? {}, timeoutMs)
+  const parsed = parseCommandArgs(body.name, body.args ?? {});
+  if (!parsed.ok) return fail("invalid_args", parsed.message, 400);
+
+  const timeoutMs =
+    typeof body.timeoutMs === "number" && body.timeoutMs > 0
+      ? body.timeoutMs
+      : commandTimeoutMs(body.name);
+
+  const outcome = await dispatch(body.name, parsed.args, timeoutMs);
   switch (outcome.kind) {
-    case 'reply':
-      return outcome.reply.ok
-        ? Response.json({ ok: true, result: outcome.reply.result })
-        : Response.json({ ok: false, error: outcome.reply.error }, { status: 422 })
-    case 'no_renderer':
-      return Response.json(
-        { ok: false, error: 'no_renderer', message: 'No renderer connected: open the page with a canvas.' },
-        { status: 409 },
-      )
-    case 'disconnected':
-      return Response.json(
-        { ok: false, error: 'renderer_disconnected', message: 'The renderer closed while the command was running.' },
-        { status: 409 },
-      )
-    case 'timeout':
-      return Response.json(
-        { ok: false, error: 'timeout', message: `No reply from the renderer after ${timeoutMs} ms.` },
-        { status: 504 },
-      )
+    case "reply": {
+      const { reply } = outcome;
+      if (reply.ok) return succeed(reply.result ?? null);
+      const code = reply.error ?? "internal_error";
+      return fail(code, reply.message ?? code, statusOf(code));
+    }
+    case "no_renderer":
+      return fail(
+        "no_renderer",
+        "No renderer connected: open the page with a canvas.",
+        409,
+      );
+    case "disconnected":
+      return fail(
+        "renderer_disconnected",
+        "The renderer closed while the command was running.",
+        409,
+      );
+    case "timeout":
+      return fail(
+        "timeout",
+        `No reply from the renderer after ${timeoutMs} ms.`,
+        504,
+      );
   }
 }
