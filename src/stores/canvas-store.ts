@@ -32,8 +32,8 @@ import {
   navigateToVersion,
   patchCurrentVersion,
   prepareLoadedCanvas,
+  removeEdges,
   renameMention,
-  stripDisconnectedMentions,
   versionInputNodes,
 } from "@/lib/versioning";
 import { defaultCanvasName, newId } from "@/stores/canvas-init";
@@ -83,7 +83,10 @@ export type CanvasStoreState = {
   onConnect: (connection: Connection) => void;
   addTextNode: (position: XYPosition, data?: Partial<TextNodeData>) => string;
   addDroppedImages: (files: DroppedImage[], position: XYPosition) => string[];
-  connectMention: (sourceId: string, targetId: string) => void;
+  moveNode: (id: string, position: XYPosition) => void;
+  deleteNodes: (ids: string[]) => void;
+  deleteEdges: (ids: string[]) => void;
+  connectNodes: (sourceId: string, targetId: string) => string;
   renameNode: (id: string, nextLabel: string) => void;
   updateTextContent: (id: string, content: string) => void;
   selectModel: (id: string, modelId: string) => void;
@@ -383,86 +386,46 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
     },
 
     onNodesChange: (changes) => {
-      const isDragChange = changes.some((change) => change.type === "position");
+      const removedIds = changes
+        .filter((change) => change.type === "remove")
+        .map((change) => change.id);
+      if (removedIds.length > 0) get().deleteNodes(removedIds);
 
-      if (isDragChange) {
-        const dragEnding = changes.some(
-          (change) => change.type === "position" && change.dragging === false,
-        );
+      const otherChanges = changes.filter((change) => change.type !== "remove");
+      if (otherChanges.length === 0) return;
+
+      const dragChanges = otherChanges.filter(
+        (change) => change.type === "position",
+      );
+      if (dragChanges.length > 0) {
         if (!isDragging) {
           isDragging = true;
           pushHistory();
         }
-        if (dragEnding) isDragging = false;
-      } else if (changes.some((change) => change.type === "remove")) {
-        pushHistory();
+        if (dragChanges.some((change) => change.dragging === false)) {
+          isDragging = false;
+        }
       }
 
-      set((state) => ({ nodes: applyNodeChanges(changes, state.nodes) }));
+      set((state) => ({ nodes: applyNodeChanges(otherChanges, state.nodes) }));
       scheduleSave();
     },
 
     onEdgesChange: (changes) => {
-      const removals = changes.filter((change) => change.type === "remove");
-      if (removals.length > 0) {
-        pushHistory();
-      }
+      const removedIds = changes
+        .filter((change) => change.type === "remove")
+        .map((change) => change.id);
+      if (removedIds.length > 0) get().deleteEdges(removedIds);
 
-      set((state) => {
-        const nextEdges = applyEdgeChanges(changes, state.edges);
-        let nodes = state.nodes;
+      const otherChanges = changes.filter((change) => change.type !== "remove");
+      if (otherChanges.length === 0) return;
 
-        for (const change of removals) {
-          const edge = state.edges.find(
-            (candidate) => candidate.id === change.id,
-          );
-          if (!edge) continue;
-
-          const target = state.nodes.find((node) => node.id === edge.target);
-          if (!isTextNode(target)) continue;
-
-          const sourceLabel = state.nodes.find(
-            (node) => node.id === edge.source,
-          )?.data.label;
-          if (!sourceLabel) continue;
-
-          nodes = nodes.map((node) =>
-            node.id === target.id && isTextNode(node)
-              ? withData(
-                  node,
-                  stripDisconnectedMentions(
-                    node.data,
-                    sourceLabel,
-                    (versionId) =>
-                      nextEdges.some(
-                        (candidate) =>
-                          candidate.source === edge.source &&
-                          candidate.target === edge.target &&
-                          candidate.data?.versionId === versionId,
-                      ),
-                  ),
-                )
-              : node,
-          );
-        }
-
-        return { nodes, edges: nextEdges };
-      });
+      set((state) => ({ edges: applyEdgeChanges(otherChanges, state.edges) }));
       scheduleSave();
     },
 
     onConnect: (connection) => {
-      pushHistory();
-      set((state) => {
-        const edge: CanvasEdge = { ...connection, id: newId() };
-        return {
-          edges: [
-            ...state.edges,
-            { ...edge, data: { versionId: edgeVersionId(edge, state.nodes) } },
-          ],
-        };
-      });
-      scheduleSave();
+      get().connectNodes(connection.source, connection.target);
     },
 
     addTextNode: (position, data) => {
@@ -497,32 +460,79 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       return images.map((image) => image.id);
     },
 
-    connectMention: (sourceId, targetId) => {
-      const target = findTextNode(get().nodes, targetId);
-      if (!target) return;
-
-      const versionId = currentVersion(target.data).id;
-      const exists = get().edges.some(
-        (edge) =>
-          edge.source === sourceId &&
-          edge.target === targetId &&
-          edge.data?.versionId === versionId,
-      );
-      if (exists) return;
+    moveNode: (id, position) => {
+      const node = requireNode(get().nodes, id);
+      if (node.position.x === position.x && node.position.y === position.y) {
+        return;
+      }
 
       pushHistory();
       set((state) => ({
-        edges: [
-          ...state.edges,
-          {
-            id: newId(),
-            source: sourceId,
-            target: targetId,
-            data: { versionId },
-          },
-        ],
+        nodes: state.nodes.map((candidate) =>
+          candidate.id === id ? { ...candidate, position } : candidate,
+        ),
       }));
       scheduleSave();
+    },
+
+    deleteNodes: (ids) => {
+      const { nodes } = get();
+      for (const id of ids) requireNode(nodes, id);
+      if (ids.length === 0) return;
+
+      const nodeIds = new Set(ids);
+      pushHistory();
+      set((state) => {
+        const touchingEdgeIds = new Set(
+          state.edges
+            .filter(
+              (edge) => nodeIds.has(edge.source) || nodeIds.has(edge.target),
+            )
+            .map((edge) => edge.id),
+        );
+        const remaining = removeEdges(state.nodes, state.edges, touchingEdgeIds);
+        return {
+          nodes: remaining.nodes.filter((node) => !nodeIds.has(node.id)),
+          edges: remaining.edges,
+        };
+      });
+      scheduleSave();
+    },
+
+    deleteEdges: (ids) => {
+      const { edges } = get();
+      const unknownId = ids.find((id) => !edges.some((edge) => edge.id === id));
+      if (unknownId) {
+        throw new CanvasError("unknown_edge", `No edge with id "${unknownId}"`);
+      }
+      if (ids.length === 0) return;
+
+      pushHistory();
+      set((state) => removeEdges(state.nodes, state.edges, new Set(ids)));
+      scheduleSave();
+    },
+
+    connectNodes: (sourceId, targetId) => {
+      const { nodes, edges } = get();
+      requireNode(nodes, sourceId);
+      requireNode(nodes, targetId);
+
+      const edge: CanvasEdge = { id: newId(), source: sourceId, target: targetId };
+      const versionId = edgeVersionId(edge, nodes);
+      const existing = edges.find(
+        (candidate) =>
+          candidate.source === sourceId &&
+          candidate.target === targetId &&
+          candidate.data?.versionId === versionId,
+      );
+      if (existing) return existing.id;
+
+      pushHistory();
+      set((state) => ({
+        edges: [...state.edges, { ...edge, data: { versionId } }],
+      }));
+      scheduleSave();
+      return edge.id;
     },
 
     renameNode: (id, nextLabel) => {

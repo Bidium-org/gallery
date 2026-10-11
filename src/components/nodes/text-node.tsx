@@ -73,7 +73,7 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
   const { prompt, modelId, paramValues = {} } = version
   const {
     nodes,
-    connectMention,
+    connectNodes,
     updateTextContent,
     selectModel,
     setParam,
@@ -178,8 +178,8 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
   }, [flushDraft, id, createVersion])
 
   const onMention = useCallback(
-    (nodeId: string) => connectMention(nodeId, id),
-    [id, connectMention],
+    (nodeId: string) => connectNodes(nodeId, id),
+    [id, connectNodes],
   )
 
   const onSelectModel = useCallback(
