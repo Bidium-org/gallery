@@ -34,8 +34,8 @@ gallery/
 | ----------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | Runtime     | `electron/`, `forge.config.ts`, `vite*.ts`: how the app starts, is hosted, built, packaged                                | `docs/RUNTIME.md`  |
 | Host        | `src/server/` router, guard, adapter; canvas, images, settings routes; `src/lib/database/`                                | `docs/HOST.md`     |
-| OpenRouter  | OpenRouter calls: generate, name, image-models, validate-key; `src/lib/generation.ts`                                     | `docs/OPENROUTER.md` |
-| Canvas      | graph model, versions, mentions, undo, autosave: `src/stores/canvas-store.ts`, `src/lib/{versioning,history,subgraph}.ts` | `docs/CANVAS.md`   |
+| OpenRouter  | OpenRouter calls: generate, name, image-models, validate-key; `src/lib/{generation,models}.ts`                            | `docs/OPENROUTER.md` |
+| Canvas      | graph model, versions, mentions, undo, autosave, named actions: `src/stores/canvas-store.ts`, `src/lib/{versioning,history,subgraph,canvas-error}.ts` | `docs/CANVAS.md`   |
 | Agent relay | SSE command channel to the renderer (`ping` only): `src/server/routes/agent/`, `src/lib/agent-relay.ts`                   | none yet           |
 | UI          | `src/components/`, `src/hooks/`, settings and model stores                                                                | none               |
 
