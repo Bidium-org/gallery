@@ -29,6 +29,8 @@ src/lib/database/
 3. The route module must export a function named after the HTTP method, else 405. Unknown path: 404 JSON.
 4. `serveApi()` never throws: an error becomes a 500, or closes the stream if the response already started. Streaming bodies (SSE) are piped chunk by chunk.
 
+`POST /api/agent/command` answers 400 `invalid_json` for a body that is not JSON, and 400 `invalid_request` for a JSON body without `name`.
+
 The guard protects against browsers, not against processes: `Host` must be `127.0.0.1`, `localhost` or `[::1]` (anti DNS rebinding), and an `Origin`, when present, must equal the `Host`. A request with no `Origin` (curl, the future agent client) passes. There is no secret, on purpose.
 
 ## Growth path
@@ -54,7 +56,6 @@ Move to [Hono](https://hono.dev) when the table passes ~30 routes, or when sever
 - `PATCH /api/canvas/:id` shallow-merges the top-level fields it receives, so `{ name }` alone is valid (renaming a canvas that is not open).
 - Updates read, merge and write under an in-memory lock per canvas id (one lock for settings), through a temp file then `rename`. Creation is a plain write.
 - `host.json` and `bin/gallery` are written the same way; with two hosts running, the last writer wins.
-- `POST /api/agent/command` answers 400 `invalid_json` for a body that is not JSON, and 400 `invalid_request` for a JSON body without `name`.
 
 ## Images
 

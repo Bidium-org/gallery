@@ -42,7 +42,7 @@ function apiPlugin(): Plugin {
         // Loaded once here: `closeBundle` runs while the server shuts down, too late for `ssrLoadModule`.
         try {
           const hostFile = await server.ssrLoadModule('/src/server/host-file.ts')
-          await hostFile.writeHostFile(hostUrl(server.httpServer!.address() as AddressInfo))
+          await hostFile.writeHostFiles(hostUrl(server.httpServer!.address() as AddressInfo))
           removeHostFile = hostFile.removeHostFile
           hostFilePath = hostFile.HOST_FILE
         } catch (error) {

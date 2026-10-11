@@ -30,7 +30,8 @@ The API is one function `(Request) → Response` (`src/server/router.ts`, see `d
 | Unknown path          | SPA fallback (200)   | SPA fallback (200)              | 404, only `/` and assets              |
 | `host.json` `pid`     | Vite process         | Forge CLI process, not Electron | Electron main                         |
 | `sleep` agent command | yes                  | yes                             | no                                    |
-| Writes `host.json` and `bin/gallery` | `gallery-api` plugin | `gallery-api` plugin | `startHost()` in `electron/main.ts` |
+
+Whoever mounts the API also writes `host.json` and `bin/gallery`, through `writeHostFiles()` (`src/server/host-file.ts`).
 
 The main tells the modes apart with `MAIN_WINDOW_VITE_DEV_SERVER_URL`: set (`electron:dev`) it just loads that URL, unset (packaged) it starts its own host first.
 
@@ -57,10 +58,11 @@ The main tells the modes apart with `MAIN_WINDOW_VITE_DEV_SERVER_URL`: set (`ele
 
 The command an agent calls: a POSIX shell script (`src/server/gallery.sh`) that forwards a command name and its JSON arguments to the host and prints the answer. It needs `jq` and `curl`.
 
-- `writeHostFile()` writes it, right before `host.json`, so the three run modes cannot drift. Vite and the Forge main bundle the source as text (`?raw` import): nothing is read from the repo at runtime, which the packaged app could not do (fuse `OnlyLoadAppFromAsar`).
-- It is written through a temp file then `rename`, never in place: `sh` reads a script while it runs, so a long call (a `generate`) would break if a restarting host overwrote the file under it. After a `rename` the running call keeps the old file.
+- `writeHostFiles()` writes it, right before `host.json`, so the three run modes cannot drift. Vite and the Forge main bundle the source as text (`?raw` import): nothing is read from the repo at runtime, which the packaged app could not do (fuse `OnlyLoadAppFromAsar`).
+- It is written through a temp file then `rename`, never in place: `sh` reads a script while it runs, so a long call (a `generate`) would break if a restarting host overwrote the file under it. After a `rename` the running call keeps the old file. A failed write removes its temp file.
 - It is never removed on exit: with the app closed it answers `host_not_running`.
 - A write failure is logged (`cli_file_write_failed`) and `host.json` is still written: the app must start even when `~/.gallery` is not writable.
+- The script is written once, when the host starts listening: in dev, restart the server after editing `src/server/gallery.sh`.
 - Two hosts running: the last one to start wrote it, like `host.json`.
 
 ## Electron main
