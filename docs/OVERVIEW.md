@@ -36,7 +36,7 @@ gallery/
 | Host        | `src/server/` router, guard, adapter; canvas, images, settings routes; `src/lib/database/`                                | `docs/HOST.md`     |
 | OpenRouter  | OpenRouter calls: generate, name, image-models, validate-key; `src/lib/{generation,models}.ts`                            | `docs/OPENROUTER.md` |
 | Canvas      | graph model, versions, mentions, undo, autosave, named actions: `src/stores/canvas-store.ts`, `src/lib/{versioning,history,subgraph,canvas-error}.ts` | `docs/CANVAS.md`   |
-| Agent relay | SSE command channel to the renderer, and the catalog of commands (validated by the host, run by the renderer): `src/server/routes/agent/`, `src/lib/agent/`; the `gallery` shell script, `src/server/agent/gallery.sh` | `docs/CLI.md`      |
+| Agent relay | SSE command channel to the renderer, and the catalog of commands (validated by the host, run by the renderer): `src/server/agent/`, `src/server/routes/agent/`, `src/lib/agent/`; the `gallery` shell script, `src/server/agent/assets/gallery.sh` | `docs/CLI.md`      |
 | UI          | `src/components/`, `src/hooks/`, settings and model stores                                                                | none               |
 
 ```mermaid

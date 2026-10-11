@@ -9,7 +9,7 @@ src/server/
 ├── node-adapter.ts  → Node request/response ↔ Request/Response
 ├── write-atomic.ts  → temp file then `rename`, for every file the host writes outside the database
 ├── host-file.ts     → writes `~/.gallery/host.json` and `~/.gallery/bin/gallery` (lifecycle: `docs/RUNTIME.md`)
-├── agent/           → gallery.sh (the script), and what the agent reads and installs
+├── agent/           → the agent's server side: relay hub, answers, add_image host step, skill installer; assets/ holds the script, the manual and the skill
 └── routes/          → canvas/, images/, settings/ (the other routes belong to OpenRouter and Agent relay)
 src/lib/database/
 ├── index.ts         → the only import point for routes
@@ -30,7 +30,7 @@ src/lib/database/
 3. The route module must export a function named after the HTTP method, else 405. Unknown path: 404 JSON.
 4. `serveApi()` never throws: an error becomes a 500, or closes the stream if the response already started. Streaming bodies (SSE) are piped chunk by chunk.
 
-`POST /api/agent/command` answers 400 `invalid_json` for a body that is not JSON, and 400 `invalid_request` for a JSON body without `name`.
+`POST /api/agent/command` reads `name` and `args` and ignores any other field. It answers 400 `invalid_json` for a body that is not JSON, and 400 `invalid_request` for a JSON body without `name`. Its error statuses come from the class of the code (`docs/CLI.md`).
 
 The guard stops browsers only (`Host` and `Origin` checks). What it does not stop, and why there is no secret: `docs/SECURITY.md`.
 
@@ -63,7 +63,7 @@ Move to [Hono](https://hono.dev) when the table passes ~30 routes, or when sever
 - The filename is `<uuid>.<ext>`; the extension comes from the uploaded file name, else its MIME type. Reads accept only `^[\w-]+\.\w+$`, which blocks path traversal.
 - The image types (`MIME_BY_EXTENSION`, the one list the others derive from) and `resolveExtension` live in `src/lib/database/internals/images.ts`, shared by the upload route and the agent.
 - A canvas references an image by the URL `/api/images/<file>` stored in its image nodes.
-- The agent command `add_image` reads local files on the host (`src/server/routes/agent/images.ts`): image extensions only (by name, not content; why: `docs/SECURITY.md`), 50 MB per file, every file checked before any is written, and only with a renderer connected. Images go back to the agent as an absolute `path` (`imagePath`), never as a URL.
+- The agent command `add_image` reads local files on the host (`src/server/agent/images.ts`): image extensions only (by name, not content; why: `docs/SECURITY.md`), 50 MB per file, every file checked before any is written, and only with a renderer connected. Images go back to the agent as an absolute `path` (`imagePath`), never as a URL.
 - Files are deleted only when their canvas is deleted (`deleteCanvas()` removes the files its image nodes point to). Deleting a node leaves its file on disk.
 
 ## Settings and API key

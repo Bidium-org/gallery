@@ -3,9 +3,10 @@
 An agent with a shell (Claude Code, Codex) drives the open canvas through `gallery`, the same way the user does. What the guard does and does not stop: `docs/SECURITY.md`. Map: `docs/OVERVIEW.md`.
 
 ```
-src/lib/agent/            → catalog (the commands), executors (what the renderer does), relay (renderer listener)
-src/server/agent/         → the script, the manual and the skill (all bundled as text), skill installer
-src/server/routes/agent/  → relay hub and routes
+src/lib/agent/            → catalog (the commands), executors (what the renderer does and highlights), relay (renderer listener)
+src/server/agent/         → relay hub, answers and error classes, add_image host step, skill installer
+src/server/agent/assets/  → the script, the manual and the skill (all bundled as text)
+src/server/routes/agent/  → the routes only
 src/stores/agent-highlight-store.ts → highlight state
 ```
 
@@ -32,9 +33,10 @@ The agent never touches the canvas: the host pushes each command over SSE to a r
 - Schemas are strict: a mistyped field is refused, not ignored.
 - The JSON Schema conversion drops `refine` rules ("absolute path", "different nodes"): they live in descriptions and in the refusal message.
 - Timeouts default to 10 s. `generate` has 110 s: the agent's shell tool times out at 2 minutes, and a longer relay timeout would get the call killed without the clean `timeout` answer.
-- `add_image` is the only command with a host step (the host reads the file), so its entry has a second schema for what the renderer receives. `sleep` exists in dev only.
+- `add_image` is the only command with a host step (the host reads the file, `src/server/agent/images.ts`), so its entry has a second schema for what the renderer receives. The command route triggers the step by the command's name. A second host step turns that special case into a registry by command, on the server side: not in the catalog, which the renderer imports and which would pull `fs` into its bundle.
+- `sleep` exists in dev only.
 
-**Adding a command:** a catalog entry, then an executor of the same name that calls the store action the UI calls (create it and rewire the UI onto it if it does not exist: executive code is written once, only the transport differs). Name node arguments `id`, `ids`, `source` or `target` and return created nodes as `id` or `copies`: the highlight finds them by those names. `manual.md` changes only if a convention does.
+**Adding a command:** a catalog entry, then an executor of the same name in `executors.ts` that calls the store action the UI calls (create it and rewire the UI onto it if it does not exist: executive code is written once, only the transport differs). The executor declares the nodes it lights while it runs (`lights`, from its arguments) and those it flashes after (`creates`, from its result); `tsc` checks both against the real shapes. A new error code is classified in `src/server/agent/answer.ts`. `manual.md` changes only if a convention does.
 
 ## Script
 
@@ -42,27 +44,35 @@ The agent never touches the canvas: the host pushes each command over SSE to a r
 
 It prints one JSON object, always: `{ok, result}` or `{ok:false, error, message}` with a stable `error` code.
 
-| Exit | Meaning                                        | Codes                                                                                                             |
-| ---- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 0    | done                                           |                                                                                                                   |
-| 1    | the call is wrong, fix it                      | `invalid_args`, `unknown_command`, `unknown_node`, any code raised by an action                                   |
-| 2    | the app is not ready or failed, tell the human | `host_not_running`, `no_renderer`, `renderer_disconnected`, `internal_error`, `unexpected_response`, `jq_missing` |
-| 3    | too long                                       | `timeout`                                                                                                         |
+Every code the host answers belongs to one class in `ERROR_CLASS` (`src/server/agent/answer.ts`), the one list of codes. The class alone sets the HTTP status, which the script maps to its exit. `tsc` refuses a `CanvasErrorCode` or a host step code left unclassified.
 
-`internal_error` exits 2, not 1: exit 1 tells the agent to retry, which would loop on a bug it cannot fix. A reply that is not a JSON object is `unexpected_response`, exit 2 even on a 2xx: the real host never answers 2xx without JSON, so something else answers on the port of a stale `host.json`.
+| Exit | Meaning                                        | Class, status  | Also                                                                 |
+| ---- | ---------------------------------------------- | -------------- | -------------------------------------------------------------------- |
+| 0    | done                                           | 2xx            |                                                                      |
+| 1    | the call is wrong, fix it                      | `call`, 400    | the script's `usage` and `invalid_json`                              |
+| 2    | the app is not ready or failed, tell the human | `app`, 503     | the script's `host_not_running`, `unexpected_response`, `jq_missing` |
+| 3    | too long                                       | `timeout`, 504 |                                                                      |
+
+- `internal_error` is `app`, not `call`: exit 1 tells the agent to retry, which would loop on a bug it cannot fix.
+- `generation_failed` is `app`, though a parameter value OpenRouter refuses is the caller's fault. OpenRouter's errors reach the renderer flattened to their message, so the two cannot be told apart, and exit 1 would tell the agent to retry a command that spends credits. `no_model`, `generation_discarded` and `request_failed` are `app` too: raised by canvas actions, they come from the environment.
+- A code missing from the table (a renderer of another version) is answered as `app`: in doubt, the agent is not told to retry.
+- One status per class, not per code: the status carries only what the script reads. A client of the API sees `no_renderer` as 503, not the more precise 409; the `error` code in the body carries the precision.
+- A reply that is not a JSON object is `unexpected_response`, exit 2 even on a 2xx: the real host never answers 2xx without JSON, so something else answers on the port of a stale `host.json`.
 
 The script's own errors are plain `printf` so they work without `jq`: their messages hold no quote or backslash. It needs `jq` and `curl`, both in `/usr/bin` on macOS. Which release started shipping `jq` is unverified.
 
 ## Manual and skill
 
-- **Manual** (`manual.md`): returned by `gallery help`, served and versioned by the app. Conventions only: output, workflow, layout, conduct. It never describes a command's arguments, or the two drift.
+- **Manual** (`manual.md`): returned by `gallery help`, served and versioned by the app. Conventions only: output, workflow, layout, conduct. It never describes a command's arguments, or the two drift. Its exit codes restate the classes of `answer.ts` for the agent: change both together.
 - **Skill** (`skill.md`): about five lines, stable across versions: what Gallery is, the script's path, "start with `gallery help`". Everything that changes lives in the manual, so the skill never needs updating.
-- **Installing it**: the "Connect an agent" button in the settings. The click is the consent: nothing is written into another tool's folder without it. The one copy is `~/.agents/skills/gallery/SKILL.md`, which Codex reads directly (OpenAI's docs list `~/.agents/skills`, not `~/.codex/skills`). Claude Code gets a symlink to it from `~/.claude/skills/gallery`, as `npx skills` does. An agent is detected by its config folder; with none, nothing is written. A folder already at the symlink's place is never touched.
+- **Installing it**: the "Connect an agent" button in the settings. The click is the consent: nothing is written into another tool's folder without it. The one copy is `~/.agents/skills/gallery/SKILL.md`, which Codex reads directly (OpenAI's docs list `~/.agents/skills`, not `~/.codex/skills`). Claude Code gets a symlink to it from `~/.claude/skills/gallery`, as `npx skills` does. An agent is detected by its config folder; with none, nothing is written. A folder, or a symlink pointing elsewhere, already at the symlink's place is never touched: Claude Code shows in error until the human removes it.
 - Unverified: that Claude Code follows the symlink, and that Codex's `view_image` takes the path `generate` returns.
 
 ## Highlight
 
 The node an agent acts on is lit amber (pulsing while the command runs, steady 1.5 s after), so the human sees where it works. The selection stays sky and the highlight wins.
+
+Which nodes a command lights is declared in its executor (`lights`, `creates`), never inferred from field names.
 
 It is view state only. Anything set on a node object would be saved in the canvas JSON and copied into undo snapshots: the highlight is never persisted, never an undo step, gone after a reload. `generate` lights its text node for the whole generation; the placeholder image is not lit, its id is known only at the end.
 
