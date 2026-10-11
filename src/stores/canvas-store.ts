@@ -21,7 +21,12 @@ import {
   type HistoryStacks,
 } from "@/lib/history";
 import { nameGeneration } from "@/lib/naming";
-import { cloneSubgraph, extractSelection, type Subgraph } from "@/lib/subgraph";
+import {
+  cloneSubgraph,
+  extractNodes,
+  extractSelection,
+  type Subgraph,
+} from "@/lib/subgraph";
 import {
   anyVersionCites,
   appendVersion,
@@ -97,6 +102,7 @@ export type CanvasStoreState = {
   generateFromTextNode: (id: string, input: GenerateInput) => Promise<void>;
   copySelection: () => void;
   pasteClipboard: () => void;
+  duplicateNodes: (ids: string[]) => Record<string, string>;
   duplicateSelection: () => void;
   undo: () => void;
   redo: () => void;
@@ -890,10 +896,26 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       insertSubgraph(cloneSubgraph(clipboard, PASTE_OFFSET, get().nodes));
     },
 
+    duplicateNodes: (ids) => {
+      const { nodes, edges } = get();
+      for (const id of ids) requireNode(nodes, id);
+      if (ids.length === 0) return {};
+
+      const clone = cloneSubgraph(
+        extractNodes(nodes, edges, new Set(ids)),
+        PASTE_OFFSET,
+        nodes,
+      );
+      insertSubgraph(clone);
+      return Object.fromEntries(clone.idMap);
+    },
+
     duplicateSelection: () => {
-      const selection = extractSelection(get().nodes, get().edges);
-      if (!selection) return;
-      insertSubgraph(cloneSubgraph(selection, PASTE_OFFSET, get().nodes));
+      get().duplicateNodes(
+        get()
+          .nodes.filter((node) => node.selected)
+          .map((node) => node.id),
+      );
     },
 
     undo: () => {
