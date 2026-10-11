@@ -23,11 +23,12 @@ const noRenderer = () =>
   );
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as {
-    name?: unknown;
-    args?: unknown;
-    timeoutMs?: unknown;
-  } | null;
+  let body: { name?: unknown; args?: unknown; timeoutMs?: unknown } | null;
+  try {
+    body = await request.json();
+  } catch {
+    return fail("invalid_json", "The request body is not valid JSON.", 400);
+  }
   if (typeof body?.name !== "string" || !body.name) {
     return fail("invalid_request", "`name` is required.", 400);
   }
