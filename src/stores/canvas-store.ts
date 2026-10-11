@@ -11,7 +11,7 @@ import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 
 import { CanvasError } from "@/lib/canvas-error";
-import { generateImage } from "@/lib/generation";
+import { generateImage, type GenerationResult } from "@/lib/generation";
 import {
   applyRedo,
   applyUndo,
@@ -20,6 +20,7 @@ import {
   takeSnapshot,
   type HistoryStacks,
 } from "@/lib/history";
+import { getMaxReferences, resolveModel } from "@/lib/models";
 import { nameGeneration } from "@/lib/naming";
 import {
   cloneSubgraph,
@@ -51,7 +52,8 @@ import type {
   TextNodeData,
   TextVersion,
 } from "@/types/TCanvasNode";
-import type { ImageModel, ParamValue } from "@/types/TImageModel";
+import type { ParamValue } from "@/types/TImageModel";
+import { imageModelsStore } from "@/stores/image-models-store";
 import { settingsStore } from "@/stores/settings-store";
 
 export type DroppedImage = {
@@ -59,10 +61,9 @@ export type DroppedImage = {
   url: string;
 };
 
-export type GenerateInput = {
-  prompt: string;
-  model: ImageModel;
-  maxReferences: number | null;
+export type GeneratedImage = {
+  id: string;
+  imageUrl: string;
 };
 
 export type CanvasStoreState = {
@@ -99,7 +100,7 @@ export type CanvasStoreState = {
   createVersion: (id: string) => string;
   createVersionForSelection: () => void;
   navigateVersion: (id: string, direction: -1 | 1) => string;
-  generateFromTextNode: (id: string, input: GenerateInput) => Promise<void>;
+  generateFromTextNode: (id: string) => Promise<GeneratedImage[]>;
   copySelection: () => void;
   pasteClipboard: () => void;
   duplicateNodes: (ids: string[]) => Record<string, string>;
@@ -125,16 +126,6 @@ const withData = <N extends CanvasNode>(node: N, data: N["data"]): N => ({
   ...node,
   data,
 });
-
-function findTextNode(
-  nodes: CanvasNode[],
-  id: string,
-): CanvasTextNode | undefined {
-  return nodes.find(
-    (candidate): candidate is CanvasTextNode =>
-      candidate.type === "text" && candidate.id === id,
-  );
-}
 
 function requireNode(nodes: CanvasNode[], id: string): CanvasNode {
   const node = nodes.find((candidate) => candidate.id === id);
@@ -721,17 +712,33 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       return next.id;
     },
 
-    generateFromTextNode: async (id, input) => {
-      const source = findTextNode(get().nodes, id);
-      if (!source) return;
+    generateFromTextNode: async (id) => {
+      const source = requireTextNode(get().nodes, id);
+      const version = currentVersion(source.data);
+      const model = resolveModel(
+        imageModelsStore.getState().models,
+        version.modelId,
+        settingsStore.getState().settings?.defaultModelId,
+      );
+      if (!model) {
+        throw new CanvasError(
+          "no_model",
+          "No image model available: the OpenRouter API key is missing or the model list is not loaded",
+        );
+      }
 
       const startedCanvasId = get().canvasId;
       const isCurrentCanvas = () => get().canvasId === startedCanvasId;
       const artifactExists = (artifactId: string) =>
         get().nodes.some((node) => node.id === artifactId);
+      const discarded = () =>
+        new CanvasError(
+          "generation_discarded",
+          "The canvas was switched or the generating node was deleted before the generation finished",
+        );
 
-      const { prompt, model, maxReferences } = input;
-      const version = currentVersion(source.data);
+      const { prompt } = version;
+      const maxReferences = getMaxReferences(model);
       const versionId = version.id;
       const { nodes, edges } = get();
 
@@ -783,9 +790,11 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       }));
       scheduleSave();
 
+      let result: GenerationResult;
+      let durationMs: number;
       try {
         const startedAt = performance.now();
-        const result = await generateImage({
+        result = await generateImage({
           model: model.id,
           prompt,
           params: version.paramValues,
@@ -793,67 +802,16 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
           texts,
           maxReferences,
         });
-        const durationMs = Math.round(performance.now() - startedAt);
+        durationMs = Math.round(performance.now() - startedAt);
 
         if (result.images.length === 0) {
           throw new Error("No image returned");
         }
-
-        if (!isCurrentCanvas() || !artifactExists(outputId)) return;
-
-        const extraIds = result.images.slice(1).map(() => newId());
-
-        pushHistory();
-        set((state) => ({
-          nodes: [
-            ...state.nodes.filter((node) => node.id !== outputId),
-            ...result.images.map((image, index) => ({
-              id: index === 0 ? outputId : extraIds[index - 1],
-              type: "image" as const,
-              position: {
-                x: position.x,
-                y: position.y + index * ARTIFACT_STACK_GAP,
-              },
-              data: {
-                label: model.name,
-                imageUrl: image.url,
-                status: "ready" as const,
-                cost: result.cost,
-                durationMs,
-              },
-            })),
-          ],
-          edges: [
-            ...state.edges.map((edge) =>
-              edge.id === edgeId ? { ...edge, animated: false } : edge,
-            ),
-            ...extraIds.map((targetId) => ({
-              id: newId(),
-              source: id,
-              target: targetId,
-              data: { versionId },
-            })),
-          ],
-        }));
-        scheduleSave();
-
-        const existingLabels = get().nodes.map((node) => node.data.label);
-        void nameGeneration(prompt, existingLabels).then((name) => {
-          if (!name || !isCurrentCanvas() || !artifactExists(outputId)) return;
-          const artifactIds = new Set<string>([outputId, ...extraIds]);
-          pushHistory();
-          set((state) => ({
-            nodes: state.nodes.map((node) =>
-              node.type === "image" && artifactIds.has(node.id)
-                ? withData(node, { ...node.data, label: name })
-                : node,
-            ),
-          }));
-          scheduleSave();
-        });
       } catch (error) {
-        if (!isCurrentCanvas() || !artifactExists(outputId)) return;
+        if (!isCurrentCanvas() || !artifactExists(outputId)) throw discarded();
 
+        const message =
+          error instanceof Error ? error.message : "Image generation failed";
         pushHistory();
         set((state) => ({
           nodes: state.nodes.map((node) =>
@@ -863,13 +821,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
                   type: "error" as const,
                   position: node.position,
                   selected: node.selected,
-                  data: {
-                    label: "Generation failed",
-                    error:
-                      error instanceof Error
-                        ? error.message
-                        : "Image generation failed",
-                  },
+                  data: { label: "Generation failed", error: message },
                 }
               : node,
           ),
@@ -878,7 +830,69 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
           ),
         }));
         scheduleSave();
+        throw new CanvasError("generation_failed", message);
       }
+
+      if (!isCurrentCanvas() || !artifactExists(outputId)) throw discarded();
+
+      const imageIds: string[] = [
+        outputId,
+        ...result.images.slice(1).map(() => newId()),
+      ];
+
+      pushHistory();
+      set((state) => ({
+        nodes: [
+          ...state.nodes.filter((node) => node.id !== outputId),
+          ...result.images.map((image, index) => ({
+            id: imageIds[index],
+            type: "image" as const,
+            position: {
+              x: position.x,
+              y: position.y + index * ARTIFACT_STACK_GAP,
+            },
+            data: {
+              label: model.name,
+              imageUrl: image.url,
+              status: "ready" as const,
+              cost: result.cost,
+              durationMs,
+            },
+          })),
+        ],
+        edges: [
+          ...state.edges.map((edge) =>
+            edge.id === edgeId ? { ...edge, animated: false } : edge,
+          ),
+          ...imageIds.slice(1).map((targetId) => ({
+            id: newId(),
+            source: id,
+            target: targetId,
+            data: { versionId },
+          })),
+        ],
+      }));
+      scheduleSave();
+
+      const existingLabels = get().nodes.map((node) => node.data.label);
+      void nameGeneration(prompt, existingLabels).then((name) => {
+        if (!name || !isCurrentCanvas() || !artifactExists(outputId)) return;
+        const artifactIds = new Set(imageIds);
+        pushHistory();
+        set((state) => ({
+          nodes: state.nodes.map((node) =>
+            node.type === "image" && artifactIds.has(node.id)
+              ? withData(node, { ...node.data, label: name })
+              : node,
+          ),
+        }));
+        scheduleSave();
+      });
+
+      return imageIds.map((imageId, index) => ({
+        id: imageId,
+        imageUrl: result.images[index].url,
+      }));
     },
 
     copySelection: () => {
