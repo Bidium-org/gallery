@@ -1,39 +1,71 @@
-import { dispatch } from '../hub'
+import {
+  type CommandArgs,
+  commandTimeoutMs,
+  isAvailableCommand,
+  parseCommandArgs,
+} from "@/lib/agent/catalog";
+import { fail, succeed } from "@/server/agent/answer";
+import { dispatch, hasRenderer } from "@/server/agent/hub";
+import {
+  HostStepError,
+  prepareAddImage,
+  withImagePaths,
+} from "@/server/agent/images";
 
-const DEFAULT_TIMEOUT_MS = 10_000
+const noRenderer = () =>
+  fail("no_renderer", "No renderer connected: open the page with a canvas.");
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as {
-    name?: unknown
-    args?: unknown
-    timeoutMs?: unknown
-  } | null
-  if (typeof body?.name !== 'string' || !body.name) {
-    return Response.json({ ok: false, error: 'invalid_request', message: '`name` is required.' }, { status: 400 })
+  let body: { name?: unknown; args?: unknown } | null;
+  try {
+    body = await request.json();
+  } catch {
+    return fail("invalid_json", "The request body is not valid JSON.");
   }
-  const timeoutMs =
-    typeof body.timeoutMs === 'number' && body.timeoutMs > 0 ? body.timeoutMs : DEFAULT_TIMEOUT_MS
+  if (typeof body?.name !== "string" || !body.name) {
+    return fail("invalid_request", "`name` is required.");
+  }
+  if (!isAvailableCommand(body.name)) {
+    return fail(
+      "unknown_command",
+      `Unknown command: ${body.name}. List them with the commands endpoint.`,
+    );
+  }
 
-  const outcome = await dispatch(body.name, body.args ?? {}, timeoutMs)
+  const parsed = parseCommandArgs(body.name, body.args ?? {});
+  if (!parsed.ok) return fail("invalid_args", parsed.message);
+
+  let args = parsed.args;
+  if (body.name === "add_image") {
+    // Checked before writing: with no page to show them, the copied files would be orphans.
+    if (!hasRenderer()) return noRenderer();
+    try {
+      args = await prepareAddImage(parsed.args as CommandArgs<"add_image">);
+    } catch (error) {
+      if (error instanceof HostStepError) return fail(error.code, error.message);
+      console.error("agent_host_step_failed", body.name, error);
+      const message = error instanceof Error ? error.message : String(error);
+      return fail("internal_error", message);
+    }
+  }
+
+  const timeoutMs = commandTimeoutMs(body.name);
+  const outcome = await dispatch(body.name, args, timeoutMs);
   switch (outcome.kind) {
-    case 'reply':
-      return outcome.reply.ok
-        ? Response.json({ ok: true, result: outcome.reply.result })
-        : Response.json({ ok: false, error: outcome.reply.error }, { status: 422 })
-    case 'no_renderer':
-      return Response.json(
-        { ok: false, error: 'no_renderer', message: 'No renderer connected: open the page with a canvas.' },
-        { status: 409 },
-      )
-    case 'disconnected':
-      return Response.json(
-        { ok: false, error: 'renderer_disconnected', message: 'The renderer closed while the command was running.' },
-        { status: 409 },
-      )
-    case 'timeout':
-      return Response.json(
-        { ok: false, error: 'timeout', message: `No reply from the renderer after ${timeoutMs} ms.` },
-        { status: 504 },
-      )
+    case "reply": {
+      const { reply } = outcome;
+      if (reply.ok) return succeed(withImagePaths(reply.result ?? null));
+      const code = reply.error ?? "internal_error";
+      return fail(code, reply.message ?? code);
+    }
+    case "no_renderer":
+      return noRenderer();
+    case "disconnected":
+      return fail(
+        "renderer_disconnected",
+        "The renderer closed while the command was running.",
+      );
+    case "timeout":
+      return fail("timeout", `No reply from the renderer after ${timeoutMs} ms.`);
   }
 }

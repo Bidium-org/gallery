@@ -1,20 +1,5 @@
 
-import { saveImage } from '@/lib/database'
-
-const EXTENSION_BY_MIME: Record<string, string> = {
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/webp': 'webp',
-  'image/gif': 'gif',
-  'image/avif': 'avif',
-  'image/svg+xml': 'svg',
-}
-
-function resolveExtension(file: File): string | null {
-  const fromName = file.name.split('.').pop()?.toLowerCase()
-  if (fromName && /^[a-z0-9]+$/.test(fromName)) return fromName
-  return EXTENSION_BY_MIME[file.type] ?? null
-}
+import { resolveExtension, saveImage } from '@/lib/database'
 
 export async function POST(request: Request) {
   try {
@@ -27,7 +12,7 @@ export async function POST(request: Request) {
 
     const images = await Promise.all(
       files.map(async (file) => {
-        const extension = resolveExtension(file)
+        const extension = resolveExtension(file.name, file.type)
         if (!extension) throw new Error(`Unsupported image type: ${file.type}`)
 
         const buffer = Buffer.from(await file.arrayBuffer())

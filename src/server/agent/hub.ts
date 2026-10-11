@@ -1,7 +1,7 @@
 // Agent relay state shared by the three agent routes (stream, command, reply).
 // Kept on `globalThis`: under `vite dev`, editing a server module re-evaluates it, and a module-level
 // state would then start empty while the open SSE stream still belongs to the previous instance.
-export type Reply = { ok: boolean; result?: unknown; error?: string }
+export type Reply = { ok: boolean; result?: unknown; error?: string; message?: string }
 
 export type Outcome =
   | { kind: 'reply'; reply: Reply }
@@ -30,6 +30,10 @@ export function removeClient(id: string): void {
     hub.pending.delete(commandId)
     pending.resolve({ kind: 'disconnected' })
   }
+}
+
+export function hasRenderer(): boolean {
+  return hub.clients.size > 0
 }
 
 // A command targets the last connected renderer.

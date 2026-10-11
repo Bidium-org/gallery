@@ -138,6 +138,41 @@ export function stripDisconnectedMentions(
   }
 }
 
+export function removeEdges(
+  nodes: CanvasNode[],
+  edges: CanvasEdge[],
+  edgeIds: ReadonlySet<string>,
+): { nodes: CanvasNode[]; edges: CanvasEdge[] } {
+  const remaining = edges.filter((edge) => !edgeIds.has(edge.id))
+  let nextNodes = nodes
+
+  for (const edge of edges.filter((candidate) => edgeIds.has(candidate.id))) {
+    const target = nodes.find((node) => node.id === edge.target)
+    if (!isTextNode(target)) continue
+
+    const sourceLabel = nodes.find((node) => node.id === edge.source)?.data.label
+    if (!sourceLabel) continue
+
+    nextNodes = nextNodes.map((node) =>
+      node.id === target.id && isTextNode(node)
+        ? {
+            ...node,
+            data: stripDisconnectedMentions(node.data, sourceLabel, (versionId) =>
+              remaining.some(
+                (candidate) =>
+                  candidate.source === edge.source &&
+                  candidate.target === edge.target &&
+                  candidate.data?.versionId === versionId,
+              ),
+            ),
+          }
+        : node,
+    )
+  }
+
+  return { nodes: nextNodes, edges: remaining }
+}
+
 type LegacyTextNodeData = {
   label: string
   content: string

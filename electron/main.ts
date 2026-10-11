@@ -65,7 +65,7 @@ async function startHost(): Promise<string> {
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   try {
-    await hostFile.writeHostFile(url);
+    await hostFile.writeHostFiles(url);
     removeHostFile = hostFile.removeHostFile;
   } catch (error) {
     // Discovery is optional: the app must open even when `~/.gallery` is not writable.

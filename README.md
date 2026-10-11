@@ -6,9 +6,13 @@ An infinite canvas for generating images with [OpenRouter](https://openrouter.ai
 
 Open the `.dmg` and drag Gallery to Applications.
 
+## Use with an agent
+
+An AI agent with a shell (Claude Code, Codex) can work on your canvas: add text and images, wire them, generate. In the app, open Settings, then Agent, and click "Connect an agent". Then ask your agent to work on your Gallery canvas. How it works: `docs/CLI.md`.
+
 ## Data
 
-Canvases, images and settings (including your API key, in clear) are plain files in `~/.gallery/data`, in every mode. `~/.gallery/host.json` holds the URL and pid of the running app, for tools that talk to it.
+Canvases, images and settings (including your API key, in clear) are plain files in `~/.gallery/data`, in every mode. `~/.gallery/host.json` holds the URL and pid of the running app, for tools that talk to it. `~/.gallery/bin/gallery` is the command an agent calls to drive the canvas: a shell script that uses `jq`, rewritten at every start.
 
 ## Development
 

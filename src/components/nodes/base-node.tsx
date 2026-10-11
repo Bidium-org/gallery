@@ -1,20 +1,23 @@
-import { useCallback, type ReactNode } from 'react'
-import { Handle, Position } from '@xyflow/react'
-import type { LucideIcon } from 'lucide-react'
+import { useCallback, type ReactNode } from "react";
+import { Handle, Position } from "@xyflow/react";
+import type { LucideIcon } from "lucide-react";
 
-import { NodeLabel } from '@/components/nodes/node-label'
-import { NodeShortcuts } from '@/components/nodes/node-shortcuts'
-import type { Shortcut } from '@/lib/shortcuts'
-import { useCanvasStore } from '@/stores/canvas-store'
-import { useSettingsStore } from '@/stores/settings-store'
+import { NodeLabel } from "@/components/nodes/node-label";
+import { NodeShortcuts } from "@/components/nodes/node-shortcuts";
+import type { Shortcut } from "@/lib/shortcuts";
+import { useAgentHighlight } from "@/stores/agent-highlight-store";
+import { useCanvasStore } from "@/stores/canvas-store";
+import { useSettingsStore } from "@/stores/settings-store";
 
-const HANDLE_BASE_CLASS = '!h-3 !w-3 transition-colors'
+const HANDLE_BASE_CLASS = "!h-3 !w-3 transition-colors";
 
-export function nodeBoxClass(
+export function useNodeBoxClass(
+  id: string,
   selected: boolean | undefined,
   defaultClass: string,
 ): string {
-  return selected ? 'border-sky-500 ring-2 ring-sky-500/40' : defaultClass
+  const lit = useAgentHighlight(id);
+  return selected || lit ? "border-sky-500 ring-2 ring-sky-500/40" : defaultClass;
 }
 
 export function BaseNode({
@@ -28,30 +31,30 @@ export function BaseNode({
   hintShortcuts,
   children,
 }: {
-  id: string
-  icon: LucideIcon
-  label: string
-  selected?: boolean
-  labelClassName?: string
-  className?: string
-  headerActions?: ReactNode
-  hintShortcuts?: Shortcut[]
-  children: ReactNode
+  id: string;
+  icon: LucideIcon;
+  label: string;
+  selected?: boolean;
+  labelClassName?: string;
+  className?: string;
+  headerActions?: ReactNode;
+  hintShortcuts?: Shortcut[];
+  children: ReactNode;
 }) {
-  const renameNode = useCanvasStore((state) => state.renameNode)
+  const renameNode = useCanvasStore((state) => state.renameNode);
   const nodeHints = useSettingsStore(
     (state) => state.resolvedShortcuts.nodeHints,
-  )
-  const hints = hintShortcuts ?? nodeHints
+  );
+  const hints = hintShortcuts ?? nodeHints;
 
   const rename = useCallback(
     (nextLabel: string) => renameNode(id, nextLabel),
     [id, renameNode],
-  )
+  );
 
   const handleClass = selected
     ? `${HANDLE_BASE_CLASS} !bg-sky-400`
-    : `${HANDLE_BASE_CLASS} !bg-neutral-500 hover:!bg-sky-400`
+    : `${HANDLE_BASE_CLASS} !bg-neutral-500 hover:!bg-sky-400`;
 
   return (
     <div className={className}>
@@ -70,5 +73,5 @@ export function BaseNode({
       {selected && <NodeShortcuts shortcuts={hints} />}
       <Handle type="source" position={Position.Right} className={handleClass} />
     </div>
-  )
+  );
 }

@@ -3,7 +3,7 @@ import type { NodeProps } from '@xyflow/react'
 import { ChevronDown, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Text } from 'lucide-react'
 
 import { ParamField } from '@/components/models/param-field'
-import { BaseNode, nodeBoxClass } from '@/components/nodes/base-node'
+import { BaseNode, useNodeBoxClass } from '@/components/nodes/base-node'
 import { ModelPicker } from '@/components/nodes/model-picker'
 import {
   MentionTextarea,
@@ -22,18 +22,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { CanvasError } from '@/lib/canvas-error'
+import { getMaxReferences, resolveModel } from '@/lib/models'
 import { currentVersion } from '@/lib/versioning'
 import { useCanvasStore } from '@/stores/canvas-store'
 import { useImageModelsStore } from '@/stores/image-models-store'
 import { useSettingsStore } from '@/stores/settings-store'
 import type { CanvasTextNode } from '@/types/TCanvasNode'
-import type { ImageModel, ParamValue } from '@/types/TImageModel'
-
-function getMaxReferences(model: ImageModel): number | null {
-  const descriptor = model.supported_parameters['input_references']
-  if (descriptor?.type === 'range') return descriptor.max
-  return null
-}
+import type { ParamValue } from '@/types/TImageModel'
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -73,7 +69,7 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
   const { prompt, modelId, paramValues = {} } = version
   const {
     nodes,
-    connectMention,
+    connectNodes,
     updateTextContent,
     selectModel,
     setParam,
@@ -95,15 +91,7 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
   const displayRef = useRef<HTMLDivElement>(null)
 
   const isEditing = draft !== null
-  const defaultModel =
-    (defaultModelId
-      ? models.find((candidate) => candidate.id === defaultModelId)
-      : null) ??
-    models[0] ??
-    null
-  const model =
-    (modelId ? models.find((candidate) => candidate.id === modelId) : null) ??
-    defaultModel
+  const model = resolveModel(models, modelId, defaultModelId)
   const maxReferences = model ? getMaxReferences(model) : null
   const parameterEntries = model
     ? Object.entries(model.supported_parameters)
@@ -120,7 +108,7 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
       type: node.type,
     }))
 
-  const boxClass = nodeBoxClass(selected, 'border-neutral-800')
+  const boxClass = useNodeBoxClass(id, selected, 'border-neutral-800')
 
   const startEditing = useCallback(() => setDraft(prompt), [prompt])
 
@@ -178,8 +166,8 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
   }, [flushDraft, id, createVersion])
 
   const onMention = useCallback(
-    (nodeId: string) => connectMention(nodeId, id),
-    [id, connectMention],
+    (nodeId: string) => connectNodes(nodeId, id),
+    [id, connectNodes],
   )
 
   const onSelectModel = useCallback(
@@ -193,15 +181,15 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
   )
 
   const generate = useCallback(() => {
-    if (!model) return
-
-    const submittedPrompt = draft ?? prompt
     if (draft !== null) {
       updateTextContent(id, draft)
     }
 
-    void generateFromTextNode(id, { prompt: submittedPrompt, model, maxReferences })
-  }, [id, model, draft, prompt, maxReferences, updateTextContent, generateFromTextNode])
+    // The outcome is already on the canvas (images or an error node): only a bug is worth logging.
+    generateFromTextNode(id).catch((error: unknown) => {
+      if (!(error instanceof CanvasError)) console.error('generation_crashed', error)
+    })
+  }, [id, draft, updateTextContent, generateFromTextNode])
 
   const headerActions = (
     <div className="nodrag flex shrink-0 items-center gap-0.5">

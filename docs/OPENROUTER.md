@@ -10,6 +10,7 @@ src/server/routes/
 └── settings/validate-key/ → checks a candidate API key
 src/lib/generation.ts    → client: builds the generation request
 src/lib/naming.ts        → client: asks for a name, `null` on any failure
+src/lib/models.ts        → which model a node uses, its reference cap (pure)
 src/lib/constants.ts     → OpenRouter base URL, naming model
 src/types/TImageGeneration.ts, TImageModel.ts → wire shapes
 ```
@@ -44,7 +45,7 @@ The reply carries base64 images and a `usage.cost`. The route writes each image 
 ## Model catalogue
 
 - Each model exposes `supported_parameters`, a map from parameter name to a descriptor (`enum`, `range` or `boolean`). The node's "Advanced settings" are generated from it: a new OpenRouter parameter of one of these three kinds shows up with no code change.
-- `imageModelsStore` sorts newest first. The model used by a node is its own choice, else the default model setting, else the first of the list.
+- `imageModelsStore` sorts newest first. The model used by a node is its own choice, else the default model setting, else the first of the list (`resolveModel()`, shared by the node's display and the generation).
 - Fetched when settings load with a key set, and again after a key is saved. No cache, no retry besides the Retry button of the settings dialog.
 
 ## Naming

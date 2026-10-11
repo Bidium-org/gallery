@@ -1,15 +1,5 @@
 
-import { readImage } from '@/lib/database'
-
-const MIME_BY_EXTENSION: Record<string, string> = {
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  webp: 'image/webp',
-  gif: 'image/gif',
-  avif: 'image/avif',
-  svg: 'image/svg+xml',
-}
+import { MIME_BY_EXTENSION, readImage } from '@/lib/database'
 
 export async function GET(
   _request: Request,
