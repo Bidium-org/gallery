@@ -1,38 +1,38 @@
-import { memo, useCallback } from 'react'
-import type { NodeProps } from '@xyflow/react'
-import { Image as ImageIcon, Download, Loader2 } from 'lucide-react'
+import { memo, useCallback } from "react";
+import type { NodeProps } from "@xyflow/react";
+import { Image as ImageIcon, Download, Loader2 } from "lucide-react";
 
-import { BaseNode, useNodeBoxClass } from '@/components/nodes/base-node'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import type { CanvasImageNode } from '@/types/TCanvasNode'
+import { BaseNode, useNodeBoxClass } from "@/components/nodes/base-node";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { CanvasImageNode } from "@/types/TCanvasNode";
 
 async function downloadImage(imageUrl: string, label: string) {
   try {
-    const response = await fetch(imageUrl)
-    const blob = await response.blob()
-    const extension = blob.type.split('/')[1] ?? 'png'
-    const url = URL.createObjectURL(blob)
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    const extension = blob.type.split("/")[1] ?? "png";
+    const url = URL.createObjectURL(blob);
 
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = `${label}.${extension}`
-    anchor.click()
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${label}.${extension}`;
+    anchor.click();
 
-    URL.revokeObjectURL(url)
+    URL.revokeObjectURL(url);
   } catch {
-    window.open(imageUrl, '_blank')
+    window.open(imageUrl, "_blank");
   }
 }
 
 export const ImageNode = memo(({ id, data, selected }: NodeProps<CanvasImageNode>) => {
-  const { label, imageUrl, status = 'ready', cost, durationMs } = data
+  const { label, imageUrl, status = "ready", cost, durationMs } = data;
 
   const onDownload = useCallback(() => {
-    void downloadImage(imageUrl, label)
-  }, [imageUrl, label])
+    void downloadImage(imageUrl, label);
+  }, [imageUrl, label]);
 
-  const boxClass = useNodeBoxClass(id, selected, 'border-neutral-800')
+  const boxClass = useNodeBoxClass(id, selected, "border-neutral-800");
 
   return (
     <BaseNode
@@ -42,7 +42,7 @@ export const ImageNode = memo(({ id, data, selected }: NodeProps<CanvasImageNode
       selected={selected}
       className="group w-[280px]"
     >
-      {status === 'generating' ? (
+      {status === "generating" ? (
         <div
           className={`flex h-[210px] w-full items-center justify-center rounded-lg border bg-neutral-900 ${boxClass}`}
         >
@@ -84,7 +84,7 @@ export const ImageNode = memo(({ id, data, selected }: NodeProps<CanvasImageNode
         </div>
       )}
     </BaseNode>
-  )
-})
+  );
+});
 
-ImageNode.displayName = 'ImageNode'
+ImageNode.displayName = "ImageNode";

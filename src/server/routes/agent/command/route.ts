@@ -6,14 +6,9 @@ import {
 } from "@/lib/agent/catalog";
 import { fail, succeed } from "@/server/agent/answer";
 import { dispatch, hasRenderer } from "@/server/agent/hub";
-import {
-  HostStepError,
-  prepareAddImage,
-  withImagePaths,
-} from "@/server/agent/images";
+import { HostStepError, prepareAddImage, withImagePaths } from "@/server/agent/images";
 
-const noRenderer = () =>
-  fail("no_renderer", "No renderer connected: open the page with a canvas.");
+const noRenderer = () => fail("no_renderer", "No renderer connected: open the page with a canvas.");
 
 export async function POST(request: Request) {
   let body: { name?: unknown; args?: unknown } | null;
@@ -61,10 +56,7 @@ export async function POST(request: Request) {
     case "no_renderer":
       return noRenderer();
     case "disconnected":
-      return fail(
-        "renderer_disconnected",
-        "The renderer closed while the command was running.",
-      );
+      return fail("renderer_disconnected", "The renderer closed while the command was running.");
     case "timeout":
       return fail("timeout", `No reply from the renderer after ${timeoutMs} ms.`);
   }

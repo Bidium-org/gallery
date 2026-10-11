@@ -1,68 +1,64 @@
-
-import { NAMING_MODEL, OPENROUTER_BASE_URL } from '@/lib/constants'
-import { getSettings } from '@/lib/database'
+import { NAMING_MODEL, OPENROUTER_BASE_URL } from "@/lib/constants";
+import { getSettings } from "@/lib/database";
 
 type ChatCompletionsResponse = {
-  choices: { message: { content: string } }[]
-}
+  choices: { message: { content: string } }[];
+};
 
 export async function POST(request: Request) {
-  const { openRouterApiKey } = await getSettings()
+  const { openRouterApiKey } = await getSettings();
 
   if (!openRouterApiKey) {
-    return Response.json(
-      { error: 'No API key configured — open Settings' },
-      { status: 500 },
-    )
+    return Response.json({ error: "No API key configured — open Settings" }, { status: 500 });
   }
 
   const { prompt, existingLabels } = (await request.json()) as {
-    prompt?: string
-    existingLabels?: string[]
-  }
+    prompt?: string;
+    existingLabels?: string[];
+  };
 
   if (!prompt) {
-    return Response.json({ error: 'prompt is required' }, { status: 400 })
+    return Response.json({ error: "prompt is required" }, { status: 400 });
   }
 
-  const taken = (existingLabels ?? []).filter(Boolean)
+  const taken = (existingLabels ?? []).filter(Boolean);
   const takenContext =
     taken.length > 0
-      ? `\n\nNames already used on this canvas — you must NOT reuse any of them: ${taken.join(', ')}`
-      : ''
+      ? `\n\nNames already used on this canvas — you must NOT reuse any of them: ${taken.join(", ")}`
+      : "";
 
   try {
     const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: `Bearer ${openRouterApiKey}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: NAMING_MODEL,
         messages: [
           {
-            role: 'system',
+            role: "system",
             content:
-              'You name image-generation outputs. You only ever receive the text prompt that produced the image — never the image itself, and that is expected. Never refuse, never mention missing images, never ask questions. Always reply with an ultra-short name (1 to 3 words) capturing the subject. Name only: no punctuation, no quotes, no explanation.',
+              "You name image-generation outputs. You only ever receive the text prompt that produced the image — never the image itself, and that is expected. Never refuse, never mention missing images, never ask questions. Always reply with an ultra-short name (1 to 3 words) capturing the subject. Name only: no punctuation, no quotes, no explanation.",
           },
-          { role: 'user', content: prompt.replaceAll('@', '') + takenContext },
+          { role: "user", content: prompt.replaceAll("@", "") + takenContext },
         ],
       }),
-    })
+    });
 
     if (!response.ok) {
-      const body = await response.text()
-      console.error('openrouter_naming_failed', response.status, body)
-      return Response.json({ error: 'Naming failed' }, { status: 502 })
+      const body = await response.text();
+      console.error("openrouter_naming_failed", response.status, body);
+      return Response.json({ error: "Naming failed" }, { status: 502 });
     }
 
-    const result = (await response.json()) as ChatCompletionsResponse
-    const name = result.choices[0]?.message.content.trim() ?? ''
+    const result = (await response.json()) as ChatCompletionsResponse;
+    const name = result.choices[0]?.message.content.trim() ?? "";
 
-    return Response.json({ name })
+    return Response.json({ name });
   } catch (error) {
-    console.error('openrouter_naming_failed', error)
-    return Response.json({ error: 'Naming failed' }, { status: 502 })
+    console.error("openrouter_naming_failed", error);
+    return Response.json({ error: "Naming failed" }, { status: 502 });
   }
 }

@@ -1,13 +1,13 @@
-import { memo } from 'react'
-import type { NodeProps } from '@xyflow/react'
-import { TriangleAlert } from 'lucide-react'
+import { memo } from "react";
+import type { NodeProps } from "@xyflow/react";
+import { TriangleAlert } from "lucide-react";
 
-import { BaseNode, useNodeBoxClass } from '@/components/nodes/base-node'
-import type { CanvasErrorNode } from '@/types/TCanvasNode'
+import { BaseNode, useNodeBoxClass } from "@/components/nodes/base-node";
+import type { CanvasErrorNode } from "@/types/TCanvasNode";
 
 export const ErrorNode = memo(({ id, data, selected }: NodeProps<CanvasErrorNode>) => {
-  const { label, error } = data
-  const boxClass = useNodeBoxClass(id, selected, 'border-red-900/60')
+  const { label, error } = data;
+  const boxClass = useNodeBoxClass(id, selected, "border-red-900/60");
 
   return (
     <BaseNode
@@ -24,7 +24,7 @@ export const ErrorNode = memo(({ id, data, selected }: NodeProps<CanvasErrorNode
         {error}
       </div>
     </BaseNode>
-  )
-})
+  );
+});
 
-ErrorNode.displayName = 'ErrorNode'
+ErrorNode.displayName = "ErrorNode";

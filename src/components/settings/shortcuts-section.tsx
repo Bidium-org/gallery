@@ -1,69 +1,67 @@
-import { useCallback, useEffect, useState } from 'react'
-import { RotateCcw } from 'lucide-react'
+import { useCallback, useEffect, useState } from "react";
+import { RotateCcw } from "lucide-react";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   findShortcutConflict,
   REBINDABLE_SHORTCUT_IDS,
   shortcutDisplay,
   SHORTCUTS,
   type ShortcutId,
-} from '@/lib/shortcuts'
-import { useSettingsStore } from '@/stores/settings-store'
-import type { KeybindingOverride } from '@/types/TSettings'
+} from "@/lib/shortcuts";
+import { useSettingsStore } from "@/stores/settings-store";
+import type { KeybindingOverride } from "@/types/TSettings";
 
 export function ShortcutsSection() {
-  const { settings, setKeybinding, resetKeybindings } = useSettingsStore(
-    (state) => state,
-  )
-  const [capturingId, setCapturingId] = useState<ShortcutId | null>(null)
-  const [conflict, setConflict] = useState<string | null>(null)
+  const { settings, setKeybinding, resetKeybindings } = useSettingsStore((state) => state);
+  const [capturingId, setCapturingId] = useState<ShortcutId | null>(null);
+  const [conflict, setConflict] = useState<string | null>(null);
 
-  const keybindings = settings?.keybindings ?? {}
+  const keybindings = settings?.keybindings ?? {};
 
   const stopCapture = useCallback(() => {
-    setCapturingId(null)
-    setConflict(null)
-  }, [])
+    setCapturingId(null);
+    setConflict(null);
+  }, []);
 
   useEffect(() => {
-    if (!capturingId) return
+    if (!capturingId) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
-      event.preventDefault()
-      event.stopPropagation()
+      event.preventDefault();
+      event.stopPropagation();
 
-      if (event.key === 'Escape') {
-        stopCapture()
-        return
+      if (event.key === "Escape") {
+        stopCapture();
+        return;
       }
-      if (['Meta', 'Control', 'Shift', 'Alt'].includes(event.key)) return
-      if (!event.metaKey && !event.ctrlKey) return
+      if (["Meta", "Control", "Shift", "Alt"].includes(event.key)) return;
+      if (!event.metaKey && !event.ctrlKey) return;
 
       const candidate: KeybindingOverride = {
         key: event.key.toLowerCase(),
         shift: event.shiftKey || undefined,
-      }
+      };
 
-      const conflicting = findShortcutConflict(keybindings, capturingId, candidate)
+      const conflicting = findShortcutConflict(keybindings, capturingId, candidate);
       if (conflicting) {
-        setConflict(`Already used by ${conflicting.label}`)
-        return
+        setConflict(`Already used by ${conflicting.label}`);
+        return;
       }
 
-      void setKeybinding(capturingId, candidate)
-      stopCapture()
-    }
+      void setKeybinding(capturingId, candidate);
+      stopCapture();
+    };
 
-    window.addEventListener('keydown', onKeyDown, true)
-    return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [capturingId, keybindings, setKeybinding, stopCapture])
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [capturingId, keybindings, setKeybinding, stopCapture]);
 
   if (!settings) {
-    return <div className="h-8 w-full animate-pulse rounded-lg bg-neutral-800" />
+    return <div className="h-8 w-full animate-pulse rounded-lg bg-neutral-800" />;
   }
 
-  const hasOverrides = Object.keys(keybindings).length > 0
+  const hasOverrides = Object.keys(keybindings).length > 0;
 
   return (
     <section>
@@ -74,12 +72,10 @@ export function ShortcutsSection() {
 
       <div className="flex flex-col divide-y divide-neutral-800 rounded-lg border border-neutral-800 bg-neutral-900">
         {REBINDABLE_SHORTCUT_IDS.map((id) => {
-          const base = SHORTCUTS[id]
-          const override = keybindings[id]
-          const display = override
-            ? shortcutDisplay(override.key, override.shift)
-            : base.display
-          const isCapturing = capturingId === id
+          const base = SHORTCUTS[id];
+          const override = keybindings[id];
+          const display = override ? shortcutDisplay(override.key, override.shift) : base.display;
+          const isCapturing = capturingId === id;
 
           return (
             <div key={id} className="flex items-center justify-between px-3 py-2">
@@ -93,13 +89,13 @@ export function ShortcutsSection() {
                 ) : (
                   <button
                     onClick={() => {
-                      setConflict(null)
-                      setCapturingId(id)
+                      setConflict(null);
+                      setCapturingId(id);
                     }}
                     className={`rounded-md border px-2 py-0.5 text-[11px] transition-colors ${
                       override
-                        ? 'border-sky-500/40 text-sky-300 hover:bg-sky-500/10'
-                        : 'border-neutral-700 text-neutral-400 hover:bg-neutral-800'
+                        ? "border-sky-500/40 text-sky-300 hover:bg-sky-500/10"
+                        : "border-neutral-700 text-neutral-400 hover:bg-neutral-800"
                     }`}
                   >
                     {display}
@@ -119,7 +115,7 @@ export function ShortcutsSection() {
                 )}
               </div>
             </div>
-          )
+          );
         })}
       </div>
 
@@ -137,5 +133,5 @@ export function ShortcutsSection() {
         </Button>
       )}
     </section>
-  )
+  );
 }

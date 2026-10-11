@@ -2,21 +2,13 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { CommandArgs, RendererArgs } from "@/lib/agent/catalog";
-import {
-  IMAGE_EXTENSIONS,
-  imagePath,
-  resolveExtension,
-  saveImage,
-} from "@/lib/database";
+import { IMAGE_EXTENSIONS, imagePath, resolveExtension, saveImage } from "@/lib/database";
 
 const IMAGE_URL = /^\/api\/images\/([\w-]+\.\w+)$/;
 
 const MAX_IMAGE_BYTES = 50 * 1024 * 1024;
 
-export type HostStepCode =
-  | "file_not_found"
-  | "unsupported_image_type"
-  | "file_too_large";
+export type HostStepCode = "file_not_found" | "unsupported_image_type" | "file_too_large";
 
 export class HostStepError extends Error {
   readonly code: HostStepCode;

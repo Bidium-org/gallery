@@ -1,16 +1,14 @@
-import { AlertTriangle, Check, Loader2, RefreshCw } from 'lucide-react'
+import { AlertTriangle, Check, Loader2, RefreshCw } from "lucide-react";
 
-import { ModelPicker } from '@/components/nodes/model-picker'
-import { ApiKeyField } from '@/components/settings/api-key'
-import { Button } from '@/components/ui/button'
-import { useImageModelsStore } from '@/stores/image-models-store'
-import { useSettingsStore } from '@/stores/settings-store'
+import { ModelPicker } from "@/components/nodes/model-picker";
+import { ApiKeyField } from "@/components/settings/api-key";
+import { Button } from "@/components/ui/button";
+import { useImageModelsStore } from "@/stores/image-models-store";
+import { useSettingsStore } from "@/stores/settings-store";
 
 export function ModelsSection() {
-  const { settings, setDefaultModel } = useSettingsStore((state) => state)
-  const { models, isLoading, error, fetchModels } = useImageModelsStore(
-    (state) => state,
-  )
+  const { settings, setDefaultModel } = useSettingsStore((state) => state);
+  const { models, isLoading, error, fetchModels } = useImageModelsStore((state) => state);
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,9 +37,7 @@ export function ModelsSection() {
                   {!isLoading && !error && (
                     <>
                       <Check className="h-3.5 w-3.5 shrink-0 text-green-500" />
-                      <span className="text-neutral-300">
-                        {models.length} models available
-                      </span>
+                      <span className="text-neutral-300">{models.length} models available</span>
                     </>
                   )}
                 </div>
@@ -64,9 +60,7 @@ export function ModelsSection() {
 
       <section>
         <h2 className="mb-1 text-sm font-semibold text-neutral-200">Defaults</h2>
-        <p className="mb-2 text-[11px] text-neutral-500">
-          Default model for new text nodes.
-        </p>
+        <p className="mb-2 text-[11px] text-neutral-500">Default model for new text nodes.</p>
         <ModelPicker
           models={models}
           value={settings?.defaultModelId ?? null}
@@ -75,5 +69,5 @@ export function ModelsSection() {
         />
       </section>
     </div>
-  )
+  );
 }

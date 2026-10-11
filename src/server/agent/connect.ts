@@ -31,8 +31,7 @@ const AGENTS: Agent[] = [
 
 type LinkState = "missing" | "ok" | "other" | "blocked";
 
-const messageOf = (error: unknown) =>
-  error instanceof Error ? error.message : String(error);
+const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 const CONFLICTS: Partial<Record<LinkState, string>> = {
   blocked: "exists and is not a link",
@@ -63,8 +62,7 @@ async function readInstalled(): Promise<string | null> {
   }
 }
 
-const linkTarget = (link: string) =>
-  path.relative(path.dirname(link), SKILL_DIR);
+const linkTarget = (link: string) => path.relative(path.dirname(link), SKILL_DIR);
 
 async function linkState(link: string): Promise<LinkState> {
   try {
@@ -141,8 +139,6 @@ export async function connectAgents(): Promise<AgentConnection[]> {
   const agents = await listAgents();
   return agents.map((agent) => {
     const message = failures.get(agent.id);
-    return message === undefined
-      ? agent
-      : { ...agent, state: "error", message };
+    return message === undefined ? agent : { ...agent, state: "error", message };
   });
 }

@@ -24,7 +24,7 @@ npm run dev            # in the browser, with the Vite dev server
 npm run electron:dev   # in an Electron window, with hot reload
 ```
 
-Build the app: `npm run electron:package` makes the `.app` in `out/`, `npm run electron:make` makes the `.dmg` in `out/make/`. Other scripts: `npm run build` (front build in `dist/`), `npm run lint`.
+Build the app: `npm run electron:package` makes the `.app` in `out/`, `npm run electron:make` makes the `.dmg` in `out/make/`. Other scripts: `npm run build` (front build in `dist/`), `npm run lint`, `npm run format` (Biome).
 
 Stack: React, Vite, Tailwind 4, shadcn/ui, React Flow, zustand, Electron Forge. The API routes live in `src/server/routes`, served by a Vite plugin in dev and by the Electron main once packaged.
 
