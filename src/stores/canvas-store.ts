@@ -643,6 +643,14 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
 
     selectModel: (id, modelId) => {
       const node = requireTextNode(get().nodes, id);
+      // Generation falls back to the default model on an id it does not know, without a word.
+      const { models } = imageModelsStore.getState();
+      if (models.length > 0 && !models.some((model) => model.id === modelId)) {
+        throw new CanvasError(
+          "unknown_model",
+          `No image model with id "${modelId}"`,
+        );
+      }
       if (currentVersion(node.data).modelId === modelId) return;
       patchTextNode(id, { modelId, paramValues: {} });
     },

@@ -81,17 +81,6 @@ function listModels() {
   }));
 }
 
-// The store accepts any id and generation then falls back to the default model without a word.
-function requireKnownModel(modelId: string) {
-  const { models } = imageModelsStore.getState();
-  if (models.length > 0 && !models.some((model) => model.id === modelId)) {
-    throw new CanvasError(
-      "unknown_model",
-      `No image model with id "${modelId}": list the ids with list_models`,
-    );
-  }
-}
-
 export const executors: Executors = {
   ping: () => "pong",
 
@@ -141,10 +130,8 @@ export const executors: Executors = {
   set_prompt: ({ id, prompt }) =>
     canvasStore.getState().updateTextContent(id, prompt),
 
-  set_model: ({ id, modelId }) => {
-    requireKnownModel(modelId);
-    canvasStore.getState().selectModel(id, modelId);
-  },
+  set_model: ({ id, modelId }) =>
+    canvasStore.getState().selectModel(id, modelId),
 
   set_param: ({ id, name, value }) =>
     canvasStore.getState().setParam(id, name, value),
