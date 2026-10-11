@@ -56,13 +56,13 @@ The main tells the modes apart with `MAIN_WINDOW_VITE_DEV_SERVER_URL`: set (`ele
 
 ## `~/.gallery/bin/gallery`
 
-The command an agent calls: a POSIX shell script (`src/server/gallery.sh`) that forwards a command name and its JSON arguments to the host and prints the answer. It needs `jq` and `curl`.
+The command an agent calls: a POSIX shell script (`src/server/agent/gallery.sh`) that forwards a command name and its JSON arguments to the host and prints the answer. It needs `jq` and `curl`.
 
 - `writeHostFiles()` writes it, right before `host.json`, so the three run modes cannot drift. Vite and the Forge main bundle the source as text (`?raw` import): nothing is read from the repo at runtime, which the packaged app could not do (fuse `OnlyLoadAppFromAsar`).
 - It is written through a temp file then `rename`, never in place: `sh` reads a script while it runs, so a long call (a `generate`) would break if a restarting host overwrote the file under it. After a `rename` the running call keeps the old file. A failed write removes its temp file.
 - It is never removed on exit: with the app closed it answers `host_not_running`.
 - A write failure is logged (`cli_file_write_failed`) and `host.json` is still written: the app must start even when `~/.gallery` is not writable.
-- The script is written once, when the host starts listening: in dev, restart the server after editing `src/server/gallery.sh`.
+- The script is written once, when the host starts listening: in dev, restart the server after editing `src/server/agent/gallery.sh`.
 - Two hosts running: the last one to start wrote it, like `host.json`.
 
 ## Electron main

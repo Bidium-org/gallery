@@ -1,4 +1,4 @@
-import { connectAgents, listAgents } from "@/server/agent-connect";
+import { connectAgents, listAgents } from "@/server/agent/connect";
 
 import { succeed } from "../answer";
 

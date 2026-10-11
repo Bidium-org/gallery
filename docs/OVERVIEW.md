@@ -36,7 +36,7 @@ gallery/
 | Host        | `src/server/` router, guard, adapter; canvas, images, settings routes; `src/lib/database/`                                | `docs/HOST.md`     |
 | OpenRouter  | OpenRouter calls: generate, name, image-models, validate-key; `src/lib/{generation,models}.ts`                            | `docs/OPENROUTER.md` |
 | Canvas      | graph model, versions, mentions, undo, autosave, named actions: `src/stores/canvas-store.ts`, `src/lib/{versioning,history,subgraph,canvas-error}.ts` | `docs/CANVAS.md`   |
-| Agent relay | SSE command channel to the renderer, and the catalog of commands (validated by the host, run by the renderer): `src/server/routes/agent/`, `src/lib/agent-{catalog,executors,relay}.ts`; the `gallery` shell script, `src/server/gallery.sh` | none yet           |
+| Agent relay | SSE command channel to the renderer, and the catalog of commands (validated by the host, run by the renderer): `src/server/routes/agent/`, `src/lib/agent/`; the `gallery` shell script, `src/server/agent/gallery.sh` | none yet           |
 | UI          | `src/components/`, `src/hooks/`, settings and model stores                                                                | none               |
 
 ```mermaid
@@ -92,12 +92,13 @@ Handlers live in `src/server/routes/<path>/route.ts`.
 | `/api/agent/command`         | POST               | Agent relay |
 | `/api/agent/commands`        | GET                | Agent relay |
 | `/api/agent/commands/:name`  | GET                | Agent relay |
+| `/api/agent/connect`         | GET, POST          | Agent relay |
 | `/api/agent/reply`           | POST               | Agent relay |
 
 ## Conventions
 
 - Alias `@` = `src/`.
-- `src/server/**` and `src/lib/database/**` use Node APIs: the renderer MUST NOT import them. Shared shapes live in `src/types/` (prefix `T`). The one `src/lib/` module the host imports is `agent-catalog.ts`: it imports zod only, so both sides can load it.
+- `src/server/**` and `src/lib/database/**` use Node APIs: the renderer MUST NOT import them. Shared shapes live in `src/types/` (prefix `T`). The one `src/lib/` module the host imports is `agent/catalog.ts`: it imports zod only, so both sides can load it.
 - A route is a `route.ts` exporting `GET`/`POST`/… as `(Request, { params }) → Response`. A new route = new file + one line in the `table` of `router.ts`.
 - The renderer owns the open canvas; the host only stores snapshots.
 - Three zustand stores in `src/stores/` (`canvasStore`, `settingsStore`, `imageModelsStore`), each with a `useXStore` hook.

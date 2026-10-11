@@ -3,7 +3,7 @@ import {
   commandTimeoutMs,
   isAvailableCommand,
   parseCommandArgs,
-} from "@/lib/agent-catalog";
+} from "@/lib/agent/catalog";
 
 import { fail, succeed } from "../answer";
 import { dispatch, hasRenderer } from "../hub";

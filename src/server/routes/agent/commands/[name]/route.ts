@@ -1,4 +1,4 @@
-import { describeCommand, isAvailableCommand } from '@/lib/agent-catalog'
+import { describeCommand, isAvailableCommand } from '@/lib/agent/catalog'
 
 import { fail, succeed } from '../../answer'
 

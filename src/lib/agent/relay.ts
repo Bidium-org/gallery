@@ -1,6 +1,6 @@
 // Renderer side of the agent relay: receives the commands pushed by the host over SSE,
 // runs them, and answers with a POST. `EventSource` reconnects by itself when the host restarts.
-import { executors } from '@/lib/agent-executors'
+import { executors } from '@/lib/agent/executors'
 import { CanvasError } from '@/lib/canvas-error'
 
 type Args = Record<string, unknown>

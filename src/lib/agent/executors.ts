@@ -1,4 +1,4 @@
-import { type CommandName, type RendererArgs } from "@/lib/agent-catalog";
+import { type CommandName, type RendererArgs } from "@/lib/agent/catalog";
 import { CanvasError } from "@/lib/canvas-error";
 import { getMaxReferences } from "@/lib/models";
 import {

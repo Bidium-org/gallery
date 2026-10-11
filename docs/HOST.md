@@ -8,7 +8,7 @@ src/server/
 ├── guard.ts         → Host / Origin check
 ├── node-adapter.ts  → Node request/response ↔ Request/Response
 ├── host-file.ts     → writes `~/.gallery/host.json` and `~/.gallery/bin/gallery` (lifecycle: `docs/RUNTIME.md`)
-├── gallery.sh       → the source of that script, bundled as text
+├── agent/           → gallery.sh (the script), and what the agent reads and installs
 └── routes/          → canvas/, images/, settings/ (the other routes belong to OpenRouter and Agent relay)
 src/lib/database/
 ├── index.ts         → the only import point for routes
