@@ -11,6 +11,7 @@ import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 
 import { CanvasError } from "@/lib/canvas-error";
+import { ARTIFACT_GAP, ARTIFACT_STACK_GAP } from "@/lib/constants";
 import { generateImage, type GenerationResult } from "@/lib/generation";
 import {
   applyRedo,
@@ -110,8 +111,6 @@ export type CanvasStoreState = {
 };
 
 const DEFAULT_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 };
-const ARTIFACT_GAP = 60;
-const ARTIFACT_STACK_GAP = 260;
 const FALLBACK_NODE_WIDTH = 300;
 const SAVE_DEBOUNCE_MS = 800;
 const PASTE_OFFSET = 40;

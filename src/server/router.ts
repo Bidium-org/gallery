@@ -1,5 +1,6 @@
 import { guard } from './guard'
 import * as agentCommand from './routes/agent/command/route'
+import * as agentConnect from './routes/agent/connect/route'
 import * as agentCommands from './routes/agent/commands/route'
 import * as agentCommandByName from './routes/agent/commands/[name]/route'
 import * as agentReply from './routes/agent/reply/route'
@@ -20,6 +21,7 @@ type RouteModule = Partial<Record<string, Handler>>
 const table: [string, unknown][] = [
   ['/api/agent/command', agentCommand],
   ['/api/agent/commands', agentCommands],
+  ['/api/agent/connect', agentConnect],
   ['/api/agent/commands/:name', agentCommandByName],
   ['/api/agent/reply', agentReply],
   ['/api/agent/stream', agentStream],
