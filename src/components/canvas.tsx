@@ -24,6 +24,7 @@ import { useCanvasPaste } from '@/hooks/use-canvas-paste'
 import { useCanvasShortcuts } from '@/hooks/use-canvas-shortcuts'
 import { uploadImages } from '@/lib/upload-images'
 import { isEdgeVisible } from '@/lib/versioning'
+import { useAgentLit } from '@/stores/agent-highlight-store'
 import { useCanvasStore } from '@/stores/canvas-store'
 
 const nodeTypes = {
@@ -51,16 +52,18 @@ function Flow() {
   useCanvasShortcuts()
   useCanvasPaste()
 
-  const selectedNodeIds = new Set(
-    nodes.filter((node) => node.selected).map((node) => node.id),
-  )
+  const agentLit = useAgentLit()
+  const highlightedNodeIds = new Set([
+    ...nodes.filter((node) => node.selected).map((node) => node.id),
+    ...Object.keys(agentLit),
+  ])
   const displayEdges = edges
     .filter((edge) => isEdgeVisible(edge, nodes))
     .map((edge) => {
       const highlighted =
         (edge.selected ?? false) ||
-        selectedNodeIds.has(edge.source) ||
-        selectedNodeIds.has(edge.target)
+        highlightedNodeIds.has(edge.source) ||
+        highlightedNodeIds.has(edge.target)
       return {
         ...edge,
         style: highlighted ? { stroke: '#38bdf8', strokeWidth: 2 } : undefined,

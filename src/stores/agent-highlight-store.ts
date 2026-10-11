@@ -5,11 +5,8 @@ const HOLD_MS = 1500
 
 type Counts = Record<string, number>
 
-export type HighlightPhase = 'running' | 'held'
-
 export type AgentHighlightState = {
-  running: Counts
-  held: Counts
+  lit: Counts
   highlight: (ids: string[]) => () => void
   flash: (ids: string[]) => void
 }
@@ -25,29 +22,22 @@ function bump(counts: Counts, ids: string[], delta: number): Counts {
 }
 
 export const agentHighlightStore = createStore<AgentHighlightState>()((set, get) => ({
-  running: {},
-  held: {},
+  lit: {},
 
   highlight: (ids) => {
-    set((state) => ({ running: bump(state.running, ids, 1) }))
+    set((state) => ({ lit: bump(state.lit, ids, 1) }))
     return () => {
-      set((state) => ({
-        running: bump(state.running, ids, -1),
-        held: bump(state.held, ids, 1),
-      }))
-      setTimeout(
-        () => set((state) => ({ held: bump(state.held, ids, -1) })),
-        HOLD_MS,
-      )
+      setTimeout(() => set((state) => ({ lit: bump(state.lit, ids, -1) })), HOLD_MS)
     }
   },
 
   flash: (ids) => get().highlight(ids)(),
 }))
 
-export function useAgentHighlight(id: string): HighlightPhase | null {
-  return useStore(agentHighlightStore, (state) => {
-    if (state.running[id]) return 'running'
-    return state.held[id] ? 'held' : null
-  })
+export function useAgentHighlight(id: string): boolean {
+  return useStore(agentHighlightStore, (state) => Boolean(state.lit[id]))
+}
+
+export function useAgentLit(): Counts {
+  return useStore(agentHighlightStore, (state) => state.lit)
 }

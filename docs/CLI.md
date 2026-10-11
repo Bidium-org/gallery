@@ -70,7 +70,7 @@ The script's own errors are plain `printf` so they work without `jq`: their mess
 
 ## Highlight
 
-The node an agent acts on is lit amber (pulsing while the command runs, steady 1.5 s after), so the human sees where it works. The selection stays sky and the highlight wins.
+The node an agent acts on is drawn as a selected one, sky frame and sky edges, while the command runs and 1.5 s after: an agent at work looks like a human at work. It is not a selection: the human's selection never changes.
 
 Which nodes a command lights is declared in its executor (`lights`, `creates`), never inferred from field names.
 
