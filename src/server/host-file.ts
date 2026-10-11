@@ -10,17 +10,25 @@ const CLI_FILE = path.join(GALLERY_DIR, "bin", "gallery");
 
 type HostInfo = { url: string; pid: number; startedAt: string };
 
-async function writeCliFile(): Promise<void> {
-  await fs.mkdir(path.dirname(CLI_FILE), { recursive: true });
-  const tempPath = `${CLI_FILE}.${process.pid}.tmp`;
-  await fs.writeFile(tempPath, cliScript, "utf-8");
-  await fs.chmod(tempPath, 0o755);
-  await fs.rename(tempPath, CLI_FILE);
+async function writeAtomic(
+  file: string,
+  content: string,
+  mode?: number,
+): Promise<void> {
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  const tempPath = `${file}.${process.pid}.tmp`;
+  try {
+    await fs.writeFile(tempPath, content, { encoding: "utf-8", mode });
+    await fs.rename(tempPath, file);
+  } catch (error) {
+    await fs.rm(tempPath, { force: true });
+    throw error;
+  }
 }
 
-export async function writeHostFile(url: string): Promise<void> {
+export async function writeHostFiles(url: string): Promise<void> {
   try {
-    await writeCliFile();
+    await writeAtomic(CLI_FILE, cliScript, 0o755);
   } catch (error) {
     console.error("cli_file_write_failed", error);
   }
@@ -29,10 +37,7 @@ export async function writeHostFile(url: string): Promise<void> {
     pid: process.pid,
     startedAt: new Date().toISOString(),
   };
-  await fs.mkdir(GALLERY_DIR, { recursive: true });
-  const tempPath = `${HOST_FILE}.${process.pid}.tmp`;
-  await fs.writeFile(tempPath, JSON.stringify(info, null, 2), "utf-8");
-  await fs.rename(tempPath, HOST_FILE);
+  await writeAtomic(HOST_FILE, JSON.stringify(info, null, 2));
 }
 
 export async function removeHostFile(): Promise<void> {
