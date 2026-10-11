@@ -7,7 +7,8 @@ src/server/
 ├── router.ts        → route table; guard first
 ├── guard.ts         → Host / Origin check
 ├── node-adapter.ts  → Node request/response ↔ Request/Response
-├── host-file.ts     → writes `~/.gallery/host.json` (lifecycle: `docs/RUNTIME.md`)
+├── host-file.ts     → writes `~/.gallery/host.json` and `~/.gallery/bin/gallery` (lifecycle: `docs/RUNTIME.md`)
+├── gallery.sh       → the source of that script, bundled as text
 └── routes/          → canvas/, images/, settings/ (the other routes belong to OpenRouter and Agent relay)
 src/lib/database/
 ├── index.ts         → the only import point for routes
@@ -41,6 +42,7 @@ Move to [Hono](https://hono.dev) when the table passes ~30 routes, or when sever
 ```
 ~/.gallery/
 ├── host.json            → where the running host is
+├── bin/gallery          → the agent's command, rewritten at every start
 └── data/
     ├── canvas/<uuid>.json   → one file per canvas
     ├── images/<uuid>.<ext>  → generated and uploaded images
@@ -51,7 +53,8 @@ Move to [Hono](https://hono.dev) when the table passes ~30 routes, or when sever
 - A canvas file is the whole `CanvasFile` (name, React Flow nodes and edges, viewport, timestamps).
 - `PATCH /api/canvas/:id` shallow-merges the top-level fields it receives, so `{ name }` alone is valid (renaming a canvas that is not open).
 - Updates read, merge and write under an in-memory lock per canvas id (one lock for settings), through a temp file then `rename`. Creation is a plain write.
-- `host.json` is written the same way; with two hosts running, the last writer wins.
+- `host.json` and `bin/gallery` are written the same way; with two hosts running, the last writer wins.
+- `POST /api/agent/command` answers 400 `invalid_json` for a body that is not JSON, and 400 `invalid_request` for a JSON body without `name`.
 
 ## Images
 

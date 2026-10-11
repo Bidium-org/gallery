@@ -14,7 +14,7 @@ vite.main.config.ts       → Forge bundle of the main: alias only
 ## Owns
 
 - The three run modes and which process hosts the router in each.
-- `host.json` lifecycle: when it is written and removed, and what its `pid` means.
+- `host.json` and `~/.gallery/bin/gallery` lifecycle: when they are written and removed, and what the `pid` means.
 - Window setup and the quit sequence.
 - Packaging and signing.
 
@@ -30,6 +30,7 @@ The API is one function `(Request) → Response` (`src/server/router.ts`, see `d
 | Unknown path          | SPA fallback (200)   | SPA fallback (200)              | 404, only `/` and assets              |
 | `host.json` `pid`     | Vite process         | Forge CLI process, not Electron | Electron main                         |
 | `sleep` agent command | yes                  | yes                             | no                                    |
+| Writes `host.json` and `bin/gallery` | `gallery-api` plugin | `gallery-api` plugin | `startHost()` in `electron/main.ts` |
 
 The main tells the modes apart with `MAIN_WINDOW_VITE_DEV_SERVER_URL`: set (`electron:dev`) it just loads that URL, unset (packaged) it starts its own host first.
 
@@ -48,6 +49,19 @@ The main tells the modes apart with `MAIN_WINDOW_VITE_DEV_SERVER_URL`: set (`ele
 - Written when the host starts listening, removed on exit by the process that owns the `pid`.
 - Always read `url` from it: dev servers listen on IPv6 only, so `127.0.0.1` is refused there, and the packaged port is random.
 - Dev modes remove it synchronously on exit. The plugin forces `process.exit` on SIGINT/SIGTERM because Vite under Forge, and Forge on Ctrl-C, would not run async cleanup.
+- Only the process whose `pid` the file carries removes it, so a host that quits never erases the file of another host still running.
+- It is written through a temp file then `rename`, so a reader never sees half a file. With two hosts running (`npm run dev` and the DMG), the last one to start wins.
+- A crash leaves it stale: a client treats a refused connection as "not running".
+
+## `~/.gallery/bin/gallery`
+
+The command an agent calls: a POSIX shell script (`src/server/gallery.sh`) that forwards a command name and its JSON arguments to the host and prints the answer. It needs `jq` and `curl`.
+
+- `writeHostFile()` writes it, right before `host.json`, so the three run modes cannot drift. Vite and the Forge main bundle the source as text (`?raw` import): nothing is read from the repo at runtime, which the packaged app could not do (fuse `OnlyLoadAppFromAsar`).
+- It is written through a temp file then `rename`, never in place: `sh` reads a script while it runs, so a long call (a `generate`) would break if a restarting host overwrote the file under it. After a `rename` the running call keeps the old file.
+- It is never removed on exit: with the app closed it answers `host_not_running`.
+- A write failure is logged (`cli_file_write_failed`) and `host.json` is still written: the app must start even when `~/.gallery` is not writable.
+- Two hosts running: the last one to start wrote it, like `host.json`.
 
 ## Electron main
 
@@ -66,4 +80,4 @@ The main tells the modes apart with `MAIN_WINDOW_VITE_DEV_SERVER_URL`: set (`ele
 - A packaged `.app` older than the last commit is silently stale: repackage before testing it.
 - The Vite dev server watches `.vite/` and `out/`: packaging while `npm run dev` is open reloads the page.
 - `npm run build` outputs `dist/` (front only, no API) and nothing serves it. It is not the Electron build.
-- To test without touching real data, set `HOME` to a throwaway folder (data and `host.json` both live under `HOME/.gallery`).
+- To test without touching real data, set `HOME` to a throwaway folder (data, `host.json` and `bin/gallery` all live under `HOME/.gallery`).

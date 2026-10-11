@@ -6,8 +6,6 @@
 
 HOST_FILE="$HOME/.gallery/host.json"
 
-# die <code> <message> <exit status>: same shape as the host's errors. Plain printf, so it works
-# without jq. Messages carry no quote or backslash.
 die() {
   printf '{"ok":false,"error":"%s","message":"%s"}\n' "$1" "$2"
   exit "$3"
@@ -46,7 +44,6 @@ else
   set -- -X POST -H 'Content-Type: application/json' --data-binary "@$work/request" "$url/api/agent/command"
 fi
 
-# -g: curl would read the brackets of an IPv6 URL as a range. No timeout: the host enforces each one.
 status=$(curl -s -g -o "$work/answer" -w '%{http_code}' "$@") ||
   die host_not_running "Gallery did not answer: open the app, then retry." 2
 
