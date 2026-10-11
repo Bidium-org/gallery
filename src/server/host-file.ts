@@ -4,27 +4,12 @@ import path from "node:path";
 import { GALLERY_DIR } from "@/lib/database/internals/paths";
 
 import cliScript from "./gallery.sh?raw";
+import { writeAtomic } from "./write-atomic";
 
 export const HOST_FILE = path.join(GALLERY_DIR, "host.json");
 const CLI_FILE = path.join(GALLERY_DIR, "bin", "gallery");
 
 type HostInfo = { url: string; pid: number; startedAt: string };
-
-async function writeAtomic(
-  file: string,
-  content: string,
-  mode?: number,
-): Promise<void> {
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  const tempPath = `${file}.${process.pid}.tmp`;
-  try {
-    await fs.writeFile(tempPath, content, { encoding: "utf-8", mode });
-    await fs.rename(tempPath, file);
-  } catch (error) {
-    await fs.rm(tempPath, { force: true });
-    throw error;
-  }
-}
 
 export async function writeHostFiles(url: string): Promise<void> {
   try {
