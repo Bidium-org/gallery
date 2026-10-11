@@ -1,17 +1,26 @@
 import {
+  type CommandArgs,
   commandTimeoutMs,
   isAvailableCommand,
   parseCommandArgs,
 } from "@/lib/agent-catalog";
 
 import { fail, succeed } from "../answer";
-import { dispatch } from "../hub";
+import { dispatch, hasRenderer } from "../hub";
+import { HostStepError, prepareAddImage, withImagePaths } from "../images";
 
 function statusOf(code: string): number {
   if (code === "invalid_args" || code === "unknown_command") return 400;
   if (code === "internal_error") return 500;
   return 422;
 }
+
+const noRenderer = () =>
+  fail(
+    "no_renderer",
+    "No renderer connected: open the page with a canvas.",
+    409,
+  );
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
@@ -38,20 +47,31 @@ export async function POST(request: Request) {
       ? body.timeoutMs
       : commandTimeoutMs(body.name);
 
-  const outcome = await dispatch(body.name, parsed.args, timeoutMs);
+  let args = parsed.args;
+  if (body.name === "add_image") {
+    // Checked before writing: with no page to show them, the copied files would be orphans.
+    if (!hasRenderer()) return noRenderer();
+    try {
+      args = await prepareAddImage(parsed.args as CommandArgs<"add_image">);
+    } catch (error) {
+      if (error instanceof HostStepError) {
+        return fail(error.code, error.message, 422);
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      return fail("internal_error", message, 500);
+    }
+  }
+
+  const outcome = await dispatch(body.name, args, timeoutMs);
   switch (outcome.kind) {
     case "reply": {
       const { reply } = outcome;
-      if (reply.ok) return succeed(reply.result ?? null);
+      if (reply.ok) return succeed(withImagePaths(reply.result ?? null));
       const code = reply.error ?? "internal_error";
       return fail(code, reply.message ?? code, statusOf(code));
     }
     case "no_renderer":
-      return fail(
-        "no_renderer",
-        "No renderer connected: open the page with a canvas.",
-        409,
-      );
+      return noRenderer();
     case "disconnected":
       return fail(
         "renderer_disconnected",
