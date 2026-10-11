@@ -182,6 +182,29 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
     }
   };
 
+  const requestCanvas = async (id: string, init?: RequestInit) => {
+    let response: Response;
+    try {
+      response = await fetch(`/api/canvas/${id}`, init);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new CanvasError(
+        "request_failed",
+        `Request for canvas "${id}" failed: ${reason}`,
+      );
+    }
+    if (response.status === 404) {
+      throw new CanvasError("unknown_canvas", `No canvas with id "${id}"`);
+    }
+    if (!response.ok) {
+      throw new CanvasError(
+        "request_failed",
+        `Request for canvas "${id}" failed with HTTP ${response.status}`,
+      );
+    }
+    return response;
+  };
+
   const scheduleSave = () => {
     if (!get().canvasId) return;
     if (saveTimer) clearTimeout(saveTimer);
@@ -311,25 +334,19 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
     loadCanvas: async (id) => {
       await flushSave();
 
-      try {
-        const response = await fetch(`/api/canvas/${id}`);
-        if (!response.ok) throw new Error("fetch failed");
-
-        const canvas = (await response.json()) as CanvasFile;
-        const prepared = prepareLoadedCanvas(canvas.nodes, canvas.edges);
-        isDragging = false;
-        set({
-          nodes: prepared.nodes,
-          edges: prepared.edges,
-          viewport: canvas.viewport,
-          canvasId: canvas.id,
-          canvasName: canvas.name,
-          clipboard: null,
-          ...EMPTY_HISTORY,
-        });
-      } catch (error) {
-        console.error("canvas_load_failed", id, error);
-      }
+      const response = await requestCanvas(id);
+      const canvas = (await response.json()) as CanvasFile;
+      const prepared = prepareLoadedCanvas(canvas.nodes, canvas.edges);
+      isDragging = false;
+      set({
+        nodes: prepared.nodes,
+        edges: prepared.edges,
+        viewport: canvas.viewport,
+        canvasId: canvas.id,
+        canvasName: canvas.name,
+        clipboard: null,
+        ...EMPTY_HISTORY,
+      });
     },
 
     renameCanvas: async (id, name) => {
@@ -337,7 +354,10 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       if (!trimmed) return;
 
       const existing = get().canvasList.find((meta) => meta.id === id);
-      if (!existing || existing.name === trimmed) return;
+      if (!existing) {
+        throw new CanvasError("unknown_canvas", `No canvas with id "${id}"`);
+      }
+      if (existing.name === trimmed) return;
 
       set((state) => ({
         canvasList: state.canvasList.map((meta) =>
@@ -351,16 +371,11 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
         return;
       }
 
-      try {
-        const response = await fetch(`/api/canvas/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: trimmed }),
-        });
-        if (!response.ok) throw new Error("rename failed");
-      } catch (error) {
-        console.error("canvas_rename_failed", id, error);
-      }
+      await requestCanvas(id, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      });
     },
 
     removeCanvas: async (id) => {

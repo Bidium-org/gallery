@@ -48,7 +48,9 @@ export function SideBar() {
     const id = renamingId
     const name = renameDraft
     setRenamingId(null)
-    void renameCanvas(id, name)
+    renameCanvas(id, name).catch((error: unknown) =>
+      console.error('canvas_rename_failed', id, error),
+    )
   }, [renamingId, renameDraft, renameCanvas])
 
   const onRenameKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
@@ -113,7 +115,9 @@ export function SideBar() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            void loadCanvas(meta.id)
+                            loadCanvas(meta.id).catch((error: unknown) =>
+                              console.error('canvas_load_failed', meta.id, error),
+                            )
                             setOpen(false)
                           }}
                           className={`min-w-0 flex-1 justify-start ${
