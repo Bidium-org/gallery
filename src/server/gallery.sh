@@ -52,6 +52,7 @@ if jq -e 'type == "object"' "$work/answer" >/dev/null 2>&1; then
   echo
 else
   printf '{"ok":false,"error":"unexpected_response","message":"HTTP %s without a JSON object."}\n' "$status"
+  case $status in 2??) exit 2 ;; esac
 fi
 
 case $status in
