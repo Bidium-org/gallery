@@ -1,11 +1,11 @@
-import type { Shortcut } from '@/lib/shortcuts'
+import type { Shortcut } from "@/lib/shortcuts";
 
 function chunk<T>(items: T[], size: number): T[][] {
-  const rows: T[][] = []
+  const rows: T[][] = [];
   for (let index = 0; index < items.length; index += size) {
-    rows.push(items.slice(index, index + size))
+    rows.push(items.slice(index, index + size));
   }
-  return rows
+  return rows;
 }
 
 export function NodeShortcuts({ shortcuts }: { shortcuts: Shortcut[] }) {
@@ -21,5 +21,5 @@ export function NodeShortcuts({ shortcuts }: { shortcuts: Shortcut[] }) {
         </div>
       ))}
     </div>
-  )
+  );
 }

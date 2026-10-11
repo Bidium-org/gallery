@@ -13,10 +13,7 @@ type Entry<A extends z.ZodObject, R extends z.ZodObject | undefined> = {
   timeoutMs?: number;
 };
 
-const defineCommand = <
-  A extends z.ZodObject,
-  R extends z.ZodObject | undefined = undefined,
->(
+const defineCommand = <A extends z.ZodObject, R extends z.ZodObject | undefined = undefined>(
   entry: Entry<A, R>,
 ): Entry<A, R> => entry;
 
@@ -28,9 +25,7 @@ const position = z
     x: z.number().describe("Horizontal flow coordinate."),
     y: z.number().describe("Vertical flow coordinate."),
   })
-  .describe(
-    "Flow coordinates, as stored in nodes and returned by get_canvas (not screen pixels).",
-  );
+  .describe("Flow coordinates, as stored in nodes and returned by get_canvas (not screen pixels).");
 
 const noArgs = z.strictObject({});
 
@@ -42,15 +37,9 @@ export const catalog = {
   }),
 
   sleep: defineCommand({
-    description:
-      "Waits, then answers. Dev only: used to test timeouts and disconnections.",
+    description: "Waits, then answers. Dev only: used to test timeouts and disconnections.",
     args: z.strictObject({
-      ms: z
-        .number()
-        .int()
-        .min(0)
-        .optional()
-        .describe("Milliseconds to wait. Default 1000."),
+      ms: z.number().int().min(0).optional().describe("Milliseconds to wait. Default 1000."),
     }),
     example: { ms: 1000 },
   }),
@@ -117,16 +106,10 @@ export const catalog = {
       "Adds local image files as image nodes, like dropping them on the canvas. Only image files are accepted. Returns, per image, the node id and the absolute path of its stored copy.",
     args: z.strictObject({
       paths: z
-        .array(
-          z
-            .string()
-            .refine((path) => path.startsWith("/"), "must be an absolute path"),
-        )
+        .array(z.string().refine((path) => path.startsWith("/"), "must be an absolute path"))
         .min(1)
         .describe("Absolute paths of the image files."),
-      position: position.describe(
-        "Position of the first image; the next ones cascade by 40 px.",
-      ),
+      position: position.describe("Position of the first image; the next ones cascade by 40 px."),
     }),
     relayed: z.strictObject({
       files: z.array(z.strictObject({ name: z.string(), url: z.string() })),
@@ -152,15 +135,13 @@ export const catalog = {
   }),
 
   delete_nodes: defineCommand({
-    description:
-      "Deletes nodes and every edge touching them. The human can undo it with Cmd+Z.",
+    description: "Deletes nodes and every edge touching them. The human can undo it with Cmd+Z.",
     args: z.strictObject({ ids: ids("Ids of the nodes to delete.") }),
     example: { ids: [EXAMPLE_ID] },
   }),
 
   rename_node: defineCommand({
-    description:
-      "Changes the label of a node. The @label mentions of it in prompts follow.",
+    description: "Changes the label of a node. The @label mentions of it in prompts follow.",
     args: z.strictObject({
       id: id("Id of the node."),
       label: label("New label."),
@@ -209,8 +190,7 @@ export const catalog = {
   }),
 
   navigate_version: defineCommand({
-    description:
-      "Makes the previous or next version of a text node current. Returns versionId.",
+    description: "Makes the previous or next version of a text node current. Returns versionId.",
     args: z.strictObject({
       id: id("Id of a text node."),
       direction: z
@@ -228,16 +208,12 @@ export const catalog = {
         source: id("Id of the node that feeds."),
         target: id("Id of the node that receives."),
       })
-      .refine(
-        (args) => args.source !== args.target,
-        "source and target must be different nodes",
-      ),
+      .refine((args) => args.source !== args.target, "source and target must be different nodes"),
     example: { source: EXAMPLE_ID, target: EXAMPLE_OTHER_ID },
   }),
 
   delete_edge: defineCommand({
-    description:
-      "Deletes an edge. The @label mention it stood for is removed from the prompts.",
+    description: "Deletes an edge. The @label mention it stood for is removed from the prompts.",
     args: z.strictObject({ id: id("Id of the edge, from get_canvas.") }),
     example: { id: EXAMPLE_ID },
   }),
@@ -254,9 +230,7 @@ export const catalog = {
 export type CommandName = keyof typeof catalog;
 type CatalogEntry<N extends CommandName> = (typeof catalog)[N];
 
-export type CommandArgs<N extends CommandName> = z.output<
-  CatalogEntry<N>["args"]
->;
+export type CommandArgs<N extends CommandName> = z.output<CatalogEntry<N>["args"]>;
 type Relayed<N extends CommandName> = Exclude<CatalogEntry<N>["relayed"], undefined>;
 export type RendererArgs<N extends CommandName> = [Relayed<N>] extends [never]
   ? CommandArgs<N>
@@ -265,9 +239,7 @@ export type RendererArgs<N extends CommandName> = [Relayed<N>] extends [never]
 const DEV_ONLY: ReadonlySet<string> = new Set<CommandName>(["sleep"]);
 
 export function isAvailableCommand(name: string): name is CommandName {
-  return (
-    Object.hasOwn(catalog, name) && (!DEV_ONLY.has(name) || import.meta.env.DEV)
-  );
+  return Object.hasOwn(catalog, name) && (!DEV_ONLY.has(name) || import.meta.env.DEV);
 }
 
 export function commandTimeoutMs(name: CommandName): number {
@@ -279,13 +251,15 @@ export function parseCommandArgs(
   name: CommandName,
   args: unknown,
 ): { ok: true; args: unknown } | { ok: false; message: string } {
-  const schema: z.ZodType = catalog[name].args
-  const parsed = schema.safeParse(args)
-  if (parsed.success) return { ok: true, args: parsed.data }
+  const schema: z.ZodType = catalog[name].args;
+  const parsed = schema.safeParse(args);
+  if (parsed.success) return { ok: true, args: parsed.data };
   const message = parsed.error.issues
-    .map((issue) => (issue.path.length > 0 ? `${issue.path.join('.')}: ${issue.message}` : issue.message))
-    .join('; ')
-  return { ok: false, message }
+    .map((issue) =>
+      issue.path.length > 0 ? `${issue.path.join(".")}: ${issue.message}` : issue.message,
+    )
+    .join("; ");
+  return { ok: false, message };
 }
 
 export function listCommands(): { name: CommandName; description: string }[] {

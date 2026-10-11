@@ -1,38 +1,28 @@
-import { useState } from 'react'
-import { Bot, Keyboard, Plug, type LucideIcon } from 'lucide-react'
+import { useState } from "react";
+import { Bot, Keyboard, Plug, type LucideIcon } from "lucide-react";
 
-import { AgentSection } from '@/components/settings/agent-section'
-import { ModelsSection } from '@/components/settings/models-section'
-import { ShortcutsSection } from '@/components/settings/shortcuts-section'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { useSettingsStore } from '@/stores/settings-store'
+import { AgentSection } from "@/components/settings/agent-section";
+import { ModelsSection } from "@/components/settings/models-section";
+import { ShortcutsSection } from "@/components/settings/shortcuts-section";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useSettingsStore } from "@/stores/settings-store";
 
-type Section = 'models' | 'shortcuts' | 'agent'
+type Section = "models" | "shortcuts" | "agent";
 
 const NAV_ITEMS: { id: Section; label: string; icon: LucideIcon }[] = [
-  { id: 'models', label: 'Models', icon: Bot },
-  { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
-  { id: 'agent', label: 'Agent', icon: Plug },
-]
+  { id: "models", label: "Models", icon: Bot },
+  { id: "shortcuts", label: "Shortcuts", icon: Keyboard },
+  { id: "agent", label: "Agent", icon: Plug },
+];
 
 export function SettingsDialog() {
-  const { settingsDialogOpen, setSettingsDialogOpen } = useSettingsStore(
-    (state) => state,
-  )
-  const [activeSection, setActiveSection] = useState<Section>('models')
+  const { settingsDialogOpen, setSettingsDialogOpen } = useSettingsStore((state) => state);
+  const [activeSection, setActiveSection] = useState<Section>("models");
 
   return (
     <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
-      <DialogContent
-        showCloseButton
-        className="h-[540px] gap-0 overflow-hidden p-0 sm:max-w-3xl"
-      >
+      <DialogContent showCloseButton className="h-[540px] gap-0 overflow-hidden p-0 sm:max-w-3xl">
         <DialogHeader className="sr-only">
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
@@ -45,9 +35,7 @@ export function SettingsDialog() {
                 size="sm"
                 onClick={() => setActiveSection(id)}
                 className={`justify-start gap-2.5 ${
-                  activeSection === id
-                    ? 'bg-neutral-800 text-neutral-200'
-                    : 'text-neutral-500'
+                  activeSection === id ? "bg-neutral-800 text-neutral-200" : "text-neutral-500"
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -56,12 +44,12 @@ export function SettingsDialog() {
             ))}
           </nav>
           <div className="min-w-0 flex-1 overflow-y-auto p-6">
-            {activeSection === 'models' && <ModelsSection />}
-            {activeSection === 'shortcuts' && <ShortcutsSection />}
-            {activeSection === 'agent' && <AgentSection />}
+            {activeSection === "models" && <ModelsSection />}
+            {activeSection === "shortcuts" && <ShortcutsSection />}
+            {activeSection === "agent" && <AgentSection />}
           </div>
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

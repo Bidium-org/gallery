@@ -10,8 +10,7 @@ type AnyExecutor = {
   creates?: (result: unknown) => string[];
 };
 
-type Outcome =
-  { ok: true; result: unknown } | { ok: false; error: string; message: string };
+type Outcome = { ok: true; result: unknown } | { ok: false; error: string; message: string };
 
 type Command = { id: string; name: string; args?: Args };
 

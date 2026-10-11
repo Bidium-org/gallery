@@ -27,9 +27,7 @@ export async function writeHostFiles(url: string): Promise<void> {
 
 export async function removeHostFile(): Promise<void> {
   try {
-    const info = JSON.parse(
-      await fs.readFile(HOST_FILE, "utf-8"),
-    ) as Partial<HostInfo>;
+    const info = JSON.parse(await fs.readFile(HOST_FILE, "utf-8")) as Partial<HostInfo>;
     if (info.pid === process.pid) await fs.unlink(HOST_FILE);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT")

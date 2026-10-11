@@ -42,15 +42,10 @@ export function BaseNode({
   children: ReactNode;
 }) {
   const renameNode = useCanvasStore((state) => state.renameNode);
-  const nodeHints = useSettingsStore(
-    (state) => state.resolvedShortcuts.nodeHints,
-  );
+  const nodeHints = useSettingsStore((state) => state.resolvedShortcuts.nodeHints);
   const hints = hintShortcuts ?? nodeHints;
 
-  const rename = useCallback(
-    (nextLabel: string) => renameNode(id, nextLabel),
-    [id, renameNode],
-  );
+  const rename = useCallback((nextLabel: string) => renameNode(id, nextLabel), [id, renameNode]);
 
   const handleClass = selected
     ? `${HANDLE_BASE_CLASS} !bg-sky-400`

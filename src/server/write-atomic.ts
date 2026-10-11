@@ -1,11 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-export async function writeAtomic(
-  file: string,
-  content: string,
-  mode?: number,
-): Promise<void> {
+export async function writeAtomic(file: string, content: string, mode?: number): Promise<void> {
   await fs.mkdir(path.dirname(file), { recursive: true });
   const tempPath = `${file}.${process.pid}.tmp`;
   try {

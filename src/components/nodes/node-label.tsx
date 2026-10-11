@@ -1,5 +1,5 @@
-import { useCallback, useState, type KeyboardEvent } from 'react'
-import { Pencil, type LucideIcon } from 'lucide-react'
+import { useCallback, useState, type KeyboardEvent } from "react";
+import { Pencil, type LucideIcon } from "lucide-react";
 
 export function NodeLabel({
   icon: Icon,
@@ -8,29 +8,27 @@ export function NodeLabel({
   selected,
   className,
 }: {
-  icon: LucideIcon
-  label: string
-  onRename: (nextLabel: string) => void
-  selected?: boolean
-  className?: string
+  icon: LucideIcon;
+  label: string;
+  onRename: (nextLabel: string) => void;
+  selected?: boolean;
+  className?: string;
 }) {
-  const [draft, setDraft] = useState<string | null>(null)
+  const [draft, setDraft] = useState<string | null>(null);
 
   const save = useCallback(() => {
-    if (draft === null) return
-    const trimmed = draft.trim()
-    setDraft(null)
-    if (trimmed && trimmed !== label) onRename(trimmed)
-  }, [draft, label, onRename])
+    if (draft === null) return;
+    const trimmed = draft.trim();
+    setDraft(null);
+    if (trimmed && trimmed !== label) onRename(trimmed);
+  }, [draft, label, onRename]);
 
   const onKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') event.currentTarget.blur()
-    if (event.key === 'Escape') setDraft(null)
-  }, [])
+    if (event.key === "Enter") event.currentTarget.blur();
+    if (event.key === "Escape") setDraft(null);
+  }, []);
 
-  const colorClass = selected
-    ? 'text-sky-400'
-    : (className ?? 'text-neutral-400')
+  const colorClass = selected ? "text-sky-400" : (className ?? "text-neutral-400");
 
   return (
     <div className={`group flex min-w-0 flex-1 items-center gap-1.5 text-xs ${colorClass}`}>
@@ -59,5 +57,5 @@ export function NodeLabel({
         </>
       )}
     </div>
-  )
+  );
 }

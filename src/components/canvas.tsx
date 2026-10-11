@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -7,33 +7,29 @@ import {
   Panel,
   SelectionMode,
   useReactFlow,
-} from '@xyflow/react'
-import { ImageUp, Plus, Text } from 'lucide-react'
+} from "@xyflow/react";
+import { ImageUp, Plus, Text } from "lucide-react";
 
-import { ImageNode } from './nodes/image-node'
-import { TextNode } from './nodes/text-node'
-import { ErrorNode } from './nodes/error-node'
-import { SideBar } from './sidebar'
-import { Button } from '@/components/ui/button'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { useCanvasPaste } from '@/hooks/use-canvas-paste'
-import { useCanvasShortcuts } from '@/hooks/use-canvas-shortcuts'
-import { uploadImages } from '@/lib/upload-images'
-import { isEdgeVisible } from '@/lib/versioning'
-import { useAgentLit } from '@/stores/agent-highlight-store'
-import { useCanvasStore } from '@/stores/canvas-store'
+import { ImageNode } from "./nodes/image-node";
+import { TextNode } from "./nodes/text-node";
+import { ErrorNode } from "./nodes/error-node";
+import { SideBar } from "./sidebar";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useCanvasPaste } from "@/hooks/use-canvas-paste";
+import { useCanvasShortcuts } from "@/hooks/use-canvas-shortcuts";
+import { uploadImages } from "@/lib/upload-images";
+import { isEdgeVisible } from "@/lib/versioning";
+import { useAgentLit } from "@/stores/agent-highlight-store";
+import { useCanvasStore } from "@/stores/canvas-store";
 
 const nodeTypes = {
   image: ImageNode,
   text: TextNode,
   error: ErrorNode,
-}
+};
 
-const isFileDrag = (event: DragEvent) => event.dataTransfer.types.includes('Files')
+const isFileDrag = (event: DragEvent) => event.dataTransfer.types.includes("Files");
 
 function Flow() {
   const {
@@ -48,44 +44,44 @@ function Flow() {
     onConnect,
     addTextNode,
     addDroppedImages,
-  } = useCanvasStore((state) => state)
-  useCanvasShortcuts()
-  useCanvasPaste()
+  } = useCanvasStore((state) => state);
+  useCanvasShortcuts();
+  useCanvasPaste();
 
-  const agentLit = useAgentLit()
+  const agentLit = useAgentLit();
   const highlightedNodeIds = new Set([
     ...nodes.filter((node) => node.selected).map((node) => node.id),
     ...Object.keys(agentLit),
-  ])
+  ]);
   const displayEdges = edges
     .filter((edge) => isEdgeVisible(edge, nodes))
     .map((edge) => {
       const highlighted =
         (edge.selected ?? false) ||
         highlightedNodeIds.has(edge.source) ||
-        highlightedNodeIds.has(edge.target)
+        highlightedNodeIds.has(edge.target);
       return {
         ...edge,
-        style: highlighted ? { stroke: '#38bdf8', strokeWidth: 2 } : undefined,
-      }
-    })
+        style: highlighted ? { stroke: "#38bdf8", strokeWidth: 2 } : undefined,
+      };
+    });
 
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [isDragOver, setIsDragOver] = useState(false)
-  const dragDepth = useRef(0)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const appliedCanvasRef = useRef<string | null | undefined>(undefined)
-  const { screenToFlowPosition, setViewport: applyViewport } = useReactFlow()
-
-  useEffect(() => {
-    void initialize()
-  }, [initialize])
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dragDepth = useRef(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const appliedCanvasRef = useRef<string | null | undefined>(undefined);
+  const { screenToFlowPosition, setViewport: applyViewport } = useReactFlow();
 
   useEffect(() => {
-    if (appliedCanvasRef.current === canvasId) return
-    appliedCanvasRef.current = canvasId
-    void applyViewport(viewport)
-  }, [canvasId, viewport, applyViewport])
+    void initialize();
+  }, [initialize]);
+
+  useEffect(() => {
+    if (appliedCanvasRef.current === canvasId) return;
+    appliedCanvasRef.current = canvasId;
+    void applyViewport(viewport);
+  }, [canvasId, viewport, applyViewport]);
 
   const viewportCenter = useCallback(
     () =>
@@ -94,73 +90,73 @@ function Flow() {
         y: window.innerHeight / 2,
       }),
     [screenToFlowPosition],
-  )
+  );
 
   const onDragEnter = useCallback((event: DragEvent) => {
-    if (!isFileDrag(event)) return
-    event.preventDefault()
-    dragDepth.current += 1
-    setIsDragOver(true)
-  }, [])
+    if (!isFileDrag(event)) return;
+    event.preventDefault();
+    dragDepth.current += 1;
+    setIsDragOver(true);
+  }, []);
 
   const onDragOver = useCallback((event: DragEvent) => {
-    event.preventDefault()
-    event.dataTransfer.dropEffect = 'copy'
-  }, [])
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }, []);
 
   const onDragLeave = useCallback((event: DragEvent) => {
-    if (!isFileDrag(event)) return
-    dragDepth.current -= 1
+    if (!isFileDrag(event)) return;
+    dragDepth.current -= 1;
     if (dragDepth.current <= 0) {
-      dragDepth.current = 0
-      setIsDragOver(false)
+      dragDepth.current = 0;
+      setIsDragOver(false);
     }
-  }, [])
+  }, []);
 
   const onDrop = useCallback(
     (event: DragEvent) => {
-      event.preventDefault()
-      dragDepth.current = 0
-      setIsDragOver(false)
+      event.preventDefault();
+      dragDepth.current = 0;
+      setIsDragOver(false);
 
-      const position = screenToFlowPosition({ x: event.clientX, y: event.clientY })
+      const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
       const files = Array.from(event.dataTransfer.files).filter((file) =>
-        file.type.startsWith('image/'),
-      )
-      if (files.length === 0) return
+        file.type.startsWith("image/"),
+      );
+      if (files.length === 0) return;
 
       uploadImages(files)
         .then((uploaded) => addDroppedImages(uploaded, position))
-        .catch((error) => console.error('image_upload_failed', error))
+        .catch((error) => console.error("image_upload_failed", error));
     },
     [screenToFlowPosition, addDroppedImages],
-  )
+  );
 
   const addTextAtCenter = useCallback(() => {
-    addTextNode(viewportCenter())
-    setMenuOpen(false)
-  }, [viewportCenter, addTextNode])
+    addTextNode(viewportCenter());
+    setMenuOpen(false);
+  }, [viewportCenter, addTextNode]);
 
   const openFilePicker = useCallback(() => {
-    setMenuOpen(false)
-    fileInputRef.current?.click()
-  }, [])
+    setMenuOpen(false);
+    fileInputRef.current?.click();
+  }, []);
 
   const onFilesPicked = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files ?? []).filter((file) =>
-        file.type.startsWith('image/'),
-      )
-      event.target.value = ''
-      if (files.length === 0) return
+        file.type.startsWith("image/"),
+      );
+      event.target.value = "";
+      if (files.length === 0) return;
 
-      const position = viewportCenter()
+      const position = viewportCenter();
       uploadImages(files)
         .then((uploaded) => addDroppedImages(uploaded, position))
-        .catch((error) => console.error('image_upload_failed', error))
+        .catch((error) => console.error("image_upload_failed", error));
     },
     [viewportCenter, addDroppedImages],
-  )
+  );
 
   return (
     <div
@@ -248,7 +244,7 @@ function Flow() {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export function Canvas() {
@@ -256,5 +252,5 @@ export function Canvas() {
     <ReactFlowProvider>
       <Flow />
     </ReactFlowProvider>
-  )
+  );
 }

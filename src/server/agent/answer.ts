@@ -49,14 +49,9 @@ const ERROR_CLASS: Record<AgentErrorCode, ErrorClass> = {
 
 // A code missing from the table (a renderer of another version) is answered as the app's failure.
 const classOf = (code: string): ErrorClass =>
-  Object.hasOwn(ERROR_CLASS, code)
-    ? ERROR_CLASS[code as AgentErrorCode]
-    : "app";
+  Object.hasOwn(ERROR_CLASS, code) ? ERROR_CLASS[code as AgentErrorCode] : "app";
 
 export const succeed = (result: unknown) => Response.json({ ok: true, result });
 
 export const fail = (error: string, message: string) =>
-  Response.json(
-    { ok: false, error, message },
-    { status: STATUS[classOf(error)] },
-  );
+  Response.json({ ok: false, error, message }, { status: STATUS[classOf(error)] });

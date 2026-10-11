@@ -1,71 +1,53 @@
-import { useCallback, useState, type KeyboardEvent } from 'react'
-import { Panel } from '@xyflow/react'
-import { ChevronDown, Pencil, Plus, Settings, Trash2 } from 'lucide-react'
+import { useCallback, useState, type KeyboardEvent } from "react";
+import { Panel } from "@xyflow/react";
+import { ChevronDown, Pencil, Plus, Settings, Trash2 } from "lucide-react";
 
-import { ConfirmDialog } from '@/components/dialogs/confirm-dialog'
-import { SettingsDialog } from '@/components/settings/settings-dialog'
-import { Button } from '@/components/ui/button'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { useCanvasStore } from '@/stores/canvas-store'
-import { useSettingsStore } from '@/stores/settings-store'
-import type { CanvasMeta } from '@/types/TCanvas'
+import { ConfirmDialog } from "@/components/dialogs/confirm-dialog";
+import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCanvasStore } from "@/stores/canvas-store";
+import { useSettingsStore } from "@/stores/settings-store";
+import type { CanvasMeta } from "@/types/TCanvas";
 
 export function SideBar() {
-  const {
-    canvasId,
-    canvasName,
-    canvasList,
-    newCanvas,
-    loadCanvas,
-    renameCanvas,
-    removeCanvas,
-  } = useCanvasStore((state) => state)
-  const setSettingsDialogOpen = useSettingsStore(
-    (state) => state.setSettingsDialogOpen,
-  )
-  const [open, setOpen] = useState(false)
-  const [renamingId, setRenamingId] = useState<string | null>(null)
-  const [renameDraft, setRenameDraft] = useState('')
-  const [deleteTarget, setDeleteTarget] = useState<CanvasMeta | null>(null)
+  const { canvasId, canvasName, canvasList, newCanvas, loadCanvas, renameCanvas, removeCanvas } =
+    useCanvasStore((state) => state);
+  const setSettingsDialogOpen = useSettingsStore((state) => state.setSettingsDialogOpen);
+  const [open, setOpen] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<CanvasMeta | null>(null);
 
   const startRename = useCallback((meta: CanvasMeta) => {
-    setRenamingId(meta.id)
-    setRenameDraft(meta.name)
-  }, [])
+    setRenamingId(meta.id);
+    setRenameDraft(meta.name);
+  }, []);
 
   const saveRename = useCallback(() => {
-    if (renamingId === null) return
-    const id = renamingId
-    const name = renameDraft
-    setRenamingId(null)
+    if (renamingId === null) return;
+    const id = renamingId;
+    const name = renameDraft;
+    setRenamingId(null);
     renameCanvas(id, name).catch((error: unknown) =>
-      console.error('canvas_rename_failed', id, error),
-    )
-  }, [renamingId, renameDraft, renameCanvas])
+      console.error("canvas_rename_failed", id, error),
+    );
+  }, [renamingId, renameDraft, renameCanvas]);
 
   const onRenameKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') event.currentTarget.blur()
-    if (event.key === 'Escape') {
-      event.stopPropagation()
-      setRenamingId(null)
+    if (event.key === "Enter") event.currentTarget.blur();
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      setRenamingId(null);
     }
-  }, [])
+  }, []);
 
   const confirmDelete = useCallback(() => {
-    if (!deleteTarget) return
-    void removeCanvas(deleteTarget.id)
-    setDeleteTarget(null)
-  }, [deleteTarget, removeCanvas])
+    if (!deleteTarget) return;
+    void removeCanvas(deleteTarget.id);
+    setDeleteTarget(null);
+  }, [deleteTarget, removeCanvas]);
 
   return (
     <Panel position="top-left" className="mt-4 ml-4">
@@ -87,8 +69,8 @@ export function SideBar() {
                 size="sm"
                 className="w-full justify-start"
                 onClick={() => {
-                  void newCanvas()
-                  setOpen(false)
+                  void newCanvas();
+                  setOpen(false);
                 }}
               >
                 <Plus />
@@ -116,12 +98,12 @@ export function SideBar() {
                           size="sm"
                           onClick={() => {
                             loadCanvas(meta.id).catch((error: unknown) =>
-                              console.error('canvas_load_failed', meta.id, error),
-                            )
-                            setOpen(false)
+                              console.error("canvas_load_failed", meta.id, error),
+                            );
+                            setOpen(false);
                           }}
                           className={`min-w-0 flex-1 justify-start ${
-                            meta.id === canvasId ? 'text-sky-300' : ''
+                            meta.id === canvasId ? "text-sky-300" : ""
                           }`}
                         >
                           <span className="truncate">{meta.name}</span>
@@ -183,13 +165,13 @@ export function SideBar() {
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(isOpen) => {
-          if (!isOpen) setDeleteTarget(null)
+          if (!isOpen) setDeleteTarget(null);
         }}
         title="Delete canvas?"
-        description={`This deletes "${deleteTarget?.name ?? ''}" and all its images. This cannot be undone.`}
+        description={`This deletes "${deleteTarget?.name ?? ""}" and all its images. This cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={confirmDelete}
       />
     </Panel>
-  )
+  );
 }

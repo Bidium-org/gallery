@@ -1,11 +1,11 @@
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 
 export function ConfirmDialog({
   open,
@@ -15,12 +15,12 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
 }: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  title: string
-  description: string
-  confirmLabel: string
-  onConfirm: () => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  onConfirm: () => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -39,5 +39,5 @@ export function ConfirmDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

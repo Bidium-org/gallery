@@ -23,10 +23,7 @@ let quitting = false;
 
 // Forge builds the renderer with `base: './'` (relative asset paths): only `/` serves `index.html`,
 // any other unknown path is a 404 instead of a SPA fallback.
-async function serveStatic(
-  req: http.IncomingMessage,
-  res: http.ServerResponse,
-): Promise<void> {
+async function serveStatic(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   if (req.method !== "GET" && req.method !== "HEAD") {
     res.writeHead(405).end();
     return;
@@ -37,13 +34,11 @@ async function serveStatic(
       RENDERER_DIR,
       pathname === "/" ? "index.html" : `.${decodeURIComponent(pathname)}`,
     );
-    if (!file.startsWith(RENDERER_DIR + path.sep))
-      throw new Error("outside_renderer_dir");
+    if (!file.startsWith(RENDERER_DIR + path.sep)) throw new Error("outside_renderer_dir");
     const body = await fs.readFile(file);
     res
       .writeHead(200, {
-        "Content-Type":
-          CONTENT_TYPES[path.extname(file)] ?? "application/octet-stream",
+        "Content-Type": CONTENT_TYPES[path.extname(file)] ?? "application/octet-stream",
       })
       .end(body);
   } catch {
@@ -78,9 +73,7 @@ async function startHost(): Promise<string> {
 async function flushRenderer(): Promise<void> {
   const window = BrowserWindow.getAllWindows()[0];
   if (!window || window.isDestroyed()) return;
-  const timeout = new Promise<void>((resolve) =>
-    setTimeout(resolve, FLUSH_TIMEOUT_MS).unref(),
-  );
+  const timeout = new Promise<void>((resolve) => setTimeout(resolve, FLUSH_TIMEOUT_MS).unref());
   try {
     await Promise.race([
       window.webContents.executeJavaScript("window.__galleryFlushSave?.()"),

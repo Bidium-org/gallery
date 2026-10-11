@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Check, ChevronDown } from 'lucide-react'
+import { useState } from "react";
+import { Check, ChevronDown } from "lucide-react";
 
 import {
   Command,
@@ -7,17 +7,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import type { ImageModel } from '@/types/TImageModel'
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import type { ImageModel } from "@/types/TImageModel";
 
 function formatCreatedDate(timestamp: number): string {
-  const date = new Date(timestamp * 1000)
-  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
 export function ModelPicker({
@@ -26,13 +22,13 @@ export function ModelPicker({
   onSelect,
   isLoading,
 }: {
-  models: ImageModel[]
-  value: string | null
-  onSelect: (modelId: string) => void
-  isLoading?: boolean
+  models: ImageModel[];
+  value: string | null;
+  onSelect: (modelId: string) => void;
+  isLoading?: boolean;
 }) {
-  const [open, setOpen] = useState(false)
-  const selected = models.find((model) => model.id === value) ?? null
+  const [open, setOpen] = useState(false);
+  const selected = models.find((model) => model.id === value) ?? null;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -42,9 +38,7 @@ export function ModelPicker({
           className="nodrag flex h-7 min-w-0 flex-1 items-center justify-between gap-2 rounded-lg border border-neutral-800 bg-neutral-900 px-2.5 text-xs text-neutral-300 outline-none hover:bg-neutral-800/60 disabled:opacity-50"
         >
           <span className="truncate">
-            {isLoading
-              ? 'Loading models…'
-              : (selected?.name ?? 'Select model')}
+            {isLoading ? "Loading models…" : (selected?.name ?? "Select model")}
           </span>
           <ChevronDown className="h-3.5 w-3.5 shrink-0 text-neutral-500" />
         </button>
@@ -56,17 +50,15 @@ export function ModelPicker({
         <Command className="bg-transparent p-0">
           <CommandInput placeholder="Search models…" />
           <CommandList>
-            <CommandEmpty className="py-4 text-xs text-neutral-500">
-              No models found
-            </CommandEmpty>
+            <CommandEmpty className="py-4 text-xs text-neutral-500">No models found</CommandEmpty>
             {models.map((model) => (
               <CommandItem
                 key={model.id}
                 value={model.id}
                 keywords={[model.name]}
                 onSelect={() => {
-                  onSelect(model.id)
-                  setOpen(false)
+                  onSelect(model.id);
+                  setOpen(false);
                 }}
                 className="flex items-center justify-between gap-2 text-xs"
               >
@@ -81,5 +73,5 @@ export function ModelPicker({
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

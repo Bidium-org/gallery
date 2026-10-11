@@ -23,12 +23,7 @@ import {
 } from "@/lib/history";
 import { getMaxReferences, resolveModel } from "@/lib/models";
 import { nameGeneration } from "@/lib/naming";
-import {
-  cloneSubgraph,
-  extractNodes,
-  extractSelection,
-  type Subgraph,
-} from "@/lib/subgraph";
+import { cloneSubgraph, extractNodes, extractSelection, type Subgraph } from "@/lib/subgraph";
 import {
   anyVersionCites,
   appendVersion,
@@ -187,10 +182,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       response = await fetch(`/api/canvas/${id}`, init);
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
-      throw new CanvasError(
-        "request_failed",
-        `Request for canvas "${id}" failed: ${reason}`,
-      );
+      throw new CanvasError("request_failed", `Request for canvas "${id}" failed: ${reason}`);
     }
     if (response.status === 404) {
       throw new CanvasError("unknown_canvas", `No canvas with id "${id}"`);
@@ -255,10 +247,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
     });
   };
 
-  const patchTextNode = (
-    id: string,
-    patch: Partial<Omit<TextVersion, "id">>,
-  ) => {
+  const patchTextNode = (id: string, patch: Partial<Omit<TextVersion, "id">>) => {
     pushHistory();
     set((state) => ({
       nodes: state.nodes.map((node) =>
@@ -274,17 +263,13 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
     pushHistory();
     set((state) => {
       const nodes = [
-        ...state.nodes.map((node) =>
-          node.selected ? { ...node, selected: false } : node,
-        ),
+        ...state.nodes.map((node) => (node.selected ? { ...node, selected: false } : node)),
         ...subgraph.nodes,
       ];
       const nodeIds = new Set(nodes.map((node) => node.id));
       const edges = [
         ...state.edges,
-        ...subgraph.edges.filter(
-          (edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target),
-        ),
+        ...subgraph.edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target)),
       ];
       return { nodes, edges };
     });
@@ -303,10 +288,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
     ...EMPTY_HISTORY,
 
     initialize: async () => {
-      await Promise.all([
-        get().fetchCanvasList(),
-        settingsStore.getState().loadSettings(),
-      ]);
+      await Promise.all([get().fetchCanvasList(), settingsStore.getState().loadSettings()]);
     },
 
     fetchCanvasList: async () => {
@@ -405,9 +387,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       const otherChanges = changes.filter((change) => change.type !== "remove");
       if (otherChanges.length === 0) return;
 
-      const dragChanges = otherChanges.filter(
-        (change) => change.type === "position",
-      );
+      const dragChanges = otherChanges.filter((change) => change.type === "position");
       if (dragChanges.length > 0) {
         if (!isDragging) {
           isDragging = true;
@@ -449,10 +429,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
         currentVersionId: versionId,
       };
       set((state) => ({
-        nodes: [
-          ...state.nodes,
-          { id, type: "text", position, data: { ...defaults, ...data } },
-        ],
+        nodes: [...state.nodes, { id, type: "text", position, data: { ...defaults, ...data } }],
       }));
       ensurePromoted();
       return id;
@@ -496,9 +473,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       set((state) => {
         const touchingEdgeIds = new Set(
           state.edges
-            .filter(
-              (edge) => nodeIds.has(edge.source) || nodeIds.has(edge.target),
-            )
+            .filter((edge) => nodeIds.has(edge.source) || nodeIds.has(edge.target))
             .map((edge) => edge.id),
         );
         const remaining = removeEdges(state.nodes, state.edges, touchingEdgeIds);
@@ -583,16 +558,10 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
 
       const staleSourceIds = new Set(
         others
+          .filter((candidate) => citesLabel(previousPrompt, candidate.data.label))
+          .filter((candidate) => !anyVersionCites(nextData, candidate.data.label))
           .filter((candidate) =>
-            citesLabel(previousPrompt, candidate.data.label),
-          )
-          .filter(
-            (candidate) => !anyVersionCites(nextData, candidate.data.label),
-          )
-          .filter((candidate) =>
-            currentEdges.some(
-              (edge) => edge.source === candidate.id && edge.target === id,
-            ),
+            currentEdges.some((edge) => edge.source === candidate.id && edge.target === id),
           )
           .map((candidate) => candidate.id),
       );
@@ -602,10 +571,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
         const candidateLabel = candidate.data.label;
         if (citesLabel(previousPrompt, candidateLabel)) continue;
         if (!citesLabel(content, candidateLabel)) continue;
-        if (
-          others.find((other) => other.data.label === candidateLabel) !==
-          candidate
-        ) {
+        if (others.find((other) => other.data.label === candidateLabel) !== candidate) {
           continue;
         }
         const alreadyConnected = currentEdges.some(
@@ -626,14 +592,10 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       pushHistory();
       set((state) => ({
         nodes: state.nodes.map((candidate) =>
-          candidate.id === id && isTextNode(candidate)
-            ? withData(candidate, nextData)
-            : candidate,
+          candidate.id === id && isTextNode(candidate) ? withData(candidate, nextData) : candidate,
         ),
         edges: [
-          ...state.edges.filter(
-            (edge) => !(edge.target === id && staleSourceIds.has(edge.source)),
-          ),
+          ...state.edges.filter((edge) => !(edge.target === id && staleSourceIds.has(edge.source))),
           ...addedEdges,
         ],
       }));
@@ -645,10 +607,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       // Generation falls back to the default model on an id it does not know, without a word.
       const { models } = imageModelsStore.getState();
       if (models.length > 0 && !models.some((model) => model.id === modelId)) {
-        throw new CanvasError(
-          "unknown_model",
-          `No image model with id "${modelId}"`,
-        );
+        throw new CanvasError("unknown_model", `No image model with id "${modelId}"`);
       }
       if (currentVersion(node.data).modelId === modelId) return;
       patchTextNode(id, { modelId, paramValues: {} });
@@ -677,17 +636,12 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       pushHistory();
       set((state) => ({
         nodes: state.nodes.map((candidate) =>
-          candidate.id === id && isTextNode(candidate)
-            ? withData(candidate, data)
-            : candidate,
+          candidate.id === id && isTextNode(candidate) ? withData(candidate, data) : candidate,
         ),
         edges: [
           ...state.edges,
           ...state.edges
-            .filter(
-              (edge) =>
-                edge.target === id && edge.data?.versionId === sourceVersionId,
-            )
+            .filter((edge) => edge.target === id && edge.data?.versionId === sourceVersionId)
             .map((edge) => ({
               ...edge,
               id: newId(),
@@ -701,9 +655,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
     },
 
     createVersionForSelection: () => {
-      const selected = get().nodes.filter(
-        (node) => node.selected && isTextNode(node),
-      );
+      const selected = get().nodes.filter((node) => node.selected && isTextNode(node));
       for (const node of selected) {
         get().createVersion(node.id);
       }
@@ -712,9 +664,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
     navigateVersion: (id, direction) => {
       const node = requireTextNode(get().nodes, id);
       const { versions } = node.data;
-      const index = versions.findIndex(
-        (version) => version.id === node.data.currentVersionId,
-      );
+      const index = versions.findIndex((version) => version.id === node.data.currentVersionId);
       const next = versions[index + direction];
       if (!next) {
         throw new CanvasError(
@@ -832,8 +782,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       } catch (error) {
         if (!isCurrentCanvas() || !artifactExists(outputId)) throw discarded();
 
-        const message =
-          error instanceof Error ? error.message : "Image generation failed";
+        const message = error instanceof Error ? error.message : "Image generation failed";
         pushHistory();
         set((state) => ({
           nodes: state.nodes.map((node) =>
@@ -857,10 +806,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
 
       if (!isCurrentCanvas() || !artifactExists(outputId)) throw discarded();
 
-      const imageIds: string[] = [
-        outputId,
-        ...result.images.slice(1).map(() => newId()),
-      ];
+      const imageIds: string[] = [outputId, ...result.images.slice(1).map(() => newId())];
 
       pushHistory();
       set((state) => ({
@@ -883,9 +829,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
           })),
         ],
         edges: [
-          ...state.edges.map((edge) =>
-            edge.id === edgeId ? { ...edge, animated: false } : edge,
-          ),
+          ...state.edges.map((edge) => (edge.id === edgeId ? { ...edge, animated: false } : edge)),
           ...imageIds.slice(1).map((targetId) => ({
             id: newId(),
             source: id,
@@ -921,9 +865,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       const selection = extractSelection(get().nodes, get().edges);
       if (!selection) return;
       set({ clipboard: selection });
-      navigator.clipboard
-        .writeText(INTERNAL_CLIPBOARD_MARKER)
-        .catch(() => undefined);
+      navigator.clipboard.writeText(INTERNAL_CLIPBOARD_MARKER).catch(() => undefined);
     },
 
     pasteClipboard: () => {
@@ -937,11 +879,7 @@ export const canvasStore = createStore<CanvasStoreState>()((set, get) => {
       for (const id of ids) requireNode(nodes, id);
       if (ids.length === 0) return {};
 
-      const clone = cloneSubgraph(
-        extractNodes(nodes, edges, new Set(ids)),
-        PASTE_OFFSET,
-        nodes,
-      );
+      const clone = cloneSubgraph(extractNodes(nodes, edges, new Set(ids)), PASTE_OFFSET, nodes);
       insertSubgraph(clone);
       return Object.fromEntries(clone.idMap);
     },

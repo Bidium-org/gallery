@@ -1,72 +1,63 @@
-import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { NodeProps } from '@xyflow/react'
-import { ChevronDown, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Text } from 'lucide-react'
+import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import type { NodeProps } from "@xyflow/react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Image as ImageIcon,
+  Plus,
+  Text,
+} from "lucide-react";
 
-import { ParamField } from '@/components/models/param-field'
-import { BaseNode, useNodeBoxClass } from '@/components/nodes/base-node'
-import { ModelPicker } from '@/components/nodes/model-picker'
-import {
-  MentionTextarea,
-  type CitableNode,
-} from '@/components/nodes/mention-textarea'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { CanvasError } from '@/lib/canvas-error'
-import { getMaxReferences, resolveModel } from '@/lib/models'
-import { currentVersion } from '@/lib/versioning'
-import { useCanvasStore } from '@/stores/canvas-store'
-import { useImageModelsStore } from '@/stores/image-models-store'
-import { useSettingsStore } from '@/stores/settings-store'
-import type { CanvasTextNode } from '@/types/TCanvasNode'
-import type { ParamValue } from '@/types/TImageModel'
+import { ParamField } from "@/components/models/param-field";
+import { BaseNode, useNodeBoxClass } from "@/components/nodes/base-node";
+import { ModelPicker } from "@/components/nodes/model-picker";
+import { MentionTextarea, type CitableNode } from "@/components/nodes/mention-textarea";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CanvasError } from "@/lib/canvas-error";
+import { getMaxReferences, resolveModel } from "@/lib/models";
+import { currentVersion } from "@/lib/versioning";
+import { useCanvasStore } from "@/stores/canvas-store";
+import { useImageModelsStore } from "@/stores/image-models-store";
+import { useSettingsStore } from "@/stores/settings-store";
+import type { CanvasTextNode } from "@/types/TCanvasNode";
+import type { ParamValue } from "@/types/TImageModel";
 
 function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function renderContent(content: string, citableNodes: CitableNode[]): ReactNode {
-  const typeByLabel = new Map(
-    citableNodes.map((node) => [node.label, node.type]),
-  )
-  const known = [...typeByLabel.keys()].filter((label) =>
-    content.includes(`@${label}`),
-  )
-  if (known.length === 0) return content
+  const typeByLabel = new Map(citableNodes.map((node) => [node.label, node.type]));
+  const known = [...typeByLabel.keys()].filter((label) => content.includes(`@${label}`));
+  if (known.length === 0) return content;
 
-  const regex = new RegExp(`@(${known.map(escapeRegex).join('|')})`, 'g')
-  const parts = content.split(regex)
+  const regex = new RegExp(`@(${known.map(escapeRegex).join("|")})`, "g");
+  const parts = content.split(regex);
 
   return parts.map((part, index) => {
-    if (index % 2 === 0) return part
+    if (index % 2 === 0) return part;
 
-    const type = typeByLabel.get(part)
+    const type = typeByLabel.get(part);
     return (
       <Badge
         key={index}
         className="mx-0.5 h-[18px] border-sky-500/30 bg-sky-500/15 px-1.5 align-baseline text-[11px] text-sky-300"
       >
-        {type === 'image' ? <ImageIcon /> : <Text />}
+        {type === "image" ? <ImageIcon /> : <Text />}
         {part}
       </Badge>
-    )
-  })
+    );
+  });
 }
 
 export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>) => {
-  const { label } = data
-  const version = currentVersion(data)
-  const { prompt, modelId, paramValues = {} } = version
+  const { label } = data;
+  const version = currentVersion(data);
+  const { prompt, modelId, paramValues = {} } = version;
   const {
     nodes,
     connectNodes,
@@ -76,29 +67,20 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
     createVersion,
     navigateVersion,
     generateFromTextNode,
-  } = useCanvasStore((state) => state)
-  const { models, isLoading: isLoadingModels } = useImageModelsStore(
-    (state) => state,
-  )
-  const defaultModelId = useSettingsStore(
-    (state) => state.settings?.defaultModelId,
-  )
-  const textNodeHints = useSettingsStore(
-    (state) => state.resolvedShortcuts.textNodeHints,
-  )
-  const [draft, setDraft] = useState<string | null>(null)
-  const editingRef = useRef<HTMLDivElement>(null)
-  const displayRef = useRef<HTMLDivElement>(null)
+  } = useCanvasStore((state) => state);
+  const { models, isLoading: isLoadingModels } = useImageModelsStore((state) => state);
+  const defaultModelId = useSettingsStore((state) => state.settings?.defaultModelId);
+  const textNodeHints = useSettingsStore((state) => state.resolvedShortcuts.textNodeHints);
+  const [draft, setDraft] = useState<string | null>(null);
+  const editingRef = useRef<HTMLDivElement>(null);
+  const displayRef = useRef<HTMLDivElement>(null);
 
-  const isEditing = draft !== null
-  const model = resolveModel(models, modelId, defaultModelId)
-  const maxReferences = model ? getMaxReferences(model) : null
-  const parameterEntries = model
-    ? Object.entries(model.supported_parameters)
-    : []
+  const isEditing = draft !== null;
+  const model = resolveModel(models, modelId, defaultModelId);
+  const maxReferences = model ? getMaxReferences(model) : null;
+  const parameterEntries = model ? Object.entries(model.supported_parameters) : [];
 
-  const versionIndex =
-    data.versions.findIndex((entry) => entry.id === data.currentVersionId) + 1
+  const versionIndex = data.versions.findIndex((entry) => entry.id === data.currentVersionId) + 1;
 
   const citableNodes: CitableNode[] = nodes
     .filter((node) => node.id !== id)
@@ -106,90 +88,87 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
       id: node.id,
       label: node.data.label,
       type: node.type,
-    }))
+    }));
 
-  const boxClass = useNodeBoxClass(id, selected, 'border-neutral-800')
+  const boxClass = useNodeBoxClass(id, selected, "border-neutral-800");
 
-  const startEditing = useCallback(() => setDraft(prompt), [prompt])
+  const startEditing = useCallback(() => setDraft(prompt), [prompt]);
 
   const save = useCallback(() => {
-    if (draft === null) return
-    updateTextContent(id, draft)
-    setDraft(null)
-  }, [draft, id, updateTextContent])
+    if (draft === null) return;
+    updateTextContent(id, draft);
+    setDraft(null);
+  }, [draft, id, updateTextContent]);
 
   useEffect(() => {
-    if (!isEditing) return
+    if (!isEditing) return;
 
     const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as HTMLElement
-      if (editingRef.current?.contains(target)) return
-      if (target.closest('[data-slot="popover-content"]')) return
-      save()
-    }
+      const target = event.target as HTMLElement;
+      if (editingRef.current?.contains(target)) return;
+      if (target.closest('[data-slot="popover-content"]')) return;
+      save();
+    };
 
-    document.addEventListener('pointerdown', onPointerDown, true)
-    return () => document.removeEventListener('pointerdown', onPointerDown, true)
-  }, [isEditing, save])
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [isEditing, save]);
 
   useEffect(() => {
-    const element = displayRef.current
-    if (!element) return
+    const element = displayRef.current;
+    if (!element) return;
 
     const onWheel = (event: WheelEvent) => {
       if (element.scrollHeight > element.clientHeight) {
-        event.stopPropagation()
+        event.stopPropagation();
       }
-    }
+    };
 
-    element.addEventListener('wheel', onWheel)
-    return () => element.removeEventListener('wheel', onWheel)
-  }, [isEditing])
+    element.addEventListener("wheel", onWheel);
+    return () => element.removeEventListener("wheel", onWheel);
+  }, [isEditing]);
 
   const flushDraft = useCallback(() => {
-    if (draft === null) return
-    updateTextContent(id, draft)
-    setDraft(null)
-  }, [draft, id, updateTextContent])
+    if (draft === null) return;
+    updateTextContent(id, draft);
+    setDraft(null);
+  }, [draft, id, updateTextContent]);
 
   const navigate = useCallback(
     (direction: -1 | 1) => {
-      flushDraft()
-      navigateVersion(id, direction)
+      flushDraft();
+      navigateVersion(id, direction);
     },
     [flushDraft, id, navigateVersion],
-  )
+  );
 
   const addVersion = useCallback(() => {
-    flushDraft()
-    createVersion(id)
-  }, [flushDraft, id, createVersion])
+    flushDraft();
+    createVersion(id);
+  }, [flushDraft, id, createVersion]);
 
-  const onMention = useCallback(
-    (nodeId: string) => connectNodes(nodeId, id),
-    [id, connectNodes],
-  )
+  const onMention = useCallback((nodeId: string) => connectNodes(nodeId, id), [id, connectNodes]);
 
   const onSelectModel = useCallback(
     (nextModelId: string) => selectModel(id, nextModelId),
     [id, selectModel],
-  )
+  );
 
   const onSetParam = useCallback(
     (name: string, value: ParamValue | null) => setParam(id, name, value),
     [id, setParam],
-  )
+  );
 
   const generate = useCallback(() => {
     if (draft !== null) {
-      updateTextContent(id, draft)
+      updateTextContent(id, draft);
     }
 
     // The outcome is already on the canvas (images or an error node): only a bug is worth logging.
     generateFromTextNode(id).catch((error: unknown) => {
-      if (!(error instanceof CanvasError)) console.error('generation_crashed', error)
-    })
-  }, [id, draft, updateTextContent, generateFromTextNode])
+      if (!(error instanceof CanvasError)) console.error("generation_crashed", error);
+    });
+  }, [id, draft, updateTextContent, generateFromTextNode]);
 
   const headerActions = (
     <div className="nodrag flex shrink-0 items-center gap-0.5">
@@ -221,22 +200,15 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label="New version"
-              onClick={addVersion}
-            >
+            <Button variant="ghost" size="icon-xs" aria-label="New version" onClick={addVersion}>
               <Plus />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">
-            New version
-          </TooltipContent>
+          <TooltipContent side="bottom">New version</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </div>
-  )
+  );
 
   return (
     <BaseNode
@@ -294,12 +266,7 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
               onSelect={onSelectModel}
               isLoading={isLoadingModels}
             />
-            <Button
-              size="sm"
-              className="h-7 shrink-0 text-xs"
-              onClick={generate}
-              disabled={!model}
-            >
+            <Button size="sm" className="h-7 shrink-0 text-xs" onClick={generate} disabled={!model}>
               Generate
             </Button>
           </div>
@@ -318,7 +285,7 @@ export const TextNode = memo(({ id, data, selected }: NodeProps<CanvasTextNode>)
         </div>
       )}
     </BaseNode>
-  )
-})
+  );
+});
 
-TextNode.displayName = 'TextNode'
+TextNode.displayName = "TextNode";
