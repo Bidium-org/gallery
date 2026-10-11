@@ -56,9 +56,9 @@ Move to [Hono](https://hono.dev) when the table passes ~30 routes, or when sever
 ## Images
 
 - The filename is `<uuid>.<ext>`; the extension comes from the uploaded file name, else its MIME type. Reads accept only `^[\w-]+\.\w+$`, which blocks path traversal.
-- The extension rules (`resolveExtension`, `IMAGE_EXTENSIONS`) live in `src/lib/database/internals/images.ts`, shared by the upload route and the agent.
+- The image types (`MIME_BY_EXTENSION`, the one list the others derive from) and `resolveExtension` live in `src/lib/database/internals/images.ts`, shared by the upload route and the agent.
 - A canvas references an image by the URL `/api/images/<file>` stored in its image nodes.
-- The agent command `add_image` reads local files on the host (`src/server/routes/agent/images.ts`): image extensions only, every file read before any is written, and only with a renderer connected. Images go back to the agent as an absolute `path` (`imagePath`), never as a URL.
+- The agent command `add_image` reads local files on the host (`src/server/routes/agent/images.ts`): image extensions only, 50 MB per file, every file checked before any is written, and only with a renderer connected. Images go back to the agent as an absolute `path` (`imagePath`), never as a URL.
 - Files are deleted only when their canvas is deleted (`deleteCanvas()` removes the files its image nodes point to). Deleting a node leaves its file on disk.
 
 ## Settings and API key
