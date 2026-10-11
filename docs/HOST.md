@@ -7,6 +7,7 @@ src/server/
 ├── router.ts        → route table; guard first
 ├── guard.ts         → Host / Origin check
 ├── node-adapter.ts  → Node request/response ↔ Request/Response
+├── write-atomic.ts  → temp file then `rename`, for every file the host writes outside the database
 ├── host-file.ts     → writes `~/.gallery/host.json` and `~/.gallery/bin/gallery` (lifecycle: `docs/RUNTIME.md`)
 ├── agent/           → gallery.sh (the script), and what the agent reads and installs
 └── routes/          → canvas/, images/, settings/ (the other routes belong to OpenRouter and Agent relay)

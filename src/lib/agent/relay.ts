@@ -1,4 +1,3 @@
-// Renderer side of the agent relay: receives the commands pushed by the host over SSE,
 import { executors } from "@/lib/agent/executors";
 import { createdIds, targetIds } from "@/lib/agent/targets";
 import { CanvasError } from "@/lib/canvas-error";
@@ -16,14 +15,14 @@ async function run(name: string, args: Args): Promise<Outcome> {
       error: "unknown_command",
       message: `Unknown command: ${name}`,
     };
-  const { highlight } = agentHighlightStore.getState();
+  const { highlight, flash } = agentHighlightStore.getState();
   const release = highlight(targetIds(args));
   try {
     const result =
       (await (
         executors[name as keyof typeof executors] as (args: Args) => unknown
       )(args)) ?? null;
-    highlight(createdIds(result))();
+    flash(createdIds(result));
     return { ok: true, result };
   } catch (error) {
     if (error instanceof CanvasError)

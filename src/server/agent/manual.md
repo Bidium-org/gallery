@@ -19,7 +19,7 @@ Gallery is an infinite canvas where text nodes hold prompts, image nodes hold re
 - Address nodes by id. Labels are not unique, and `@label` in a prompt wires only the first node carrying that label.
 - `size` can be missing right after a node is added, until the canvas has measured it.
 - `generate` waits until the images exist, and spends OpenRouter credits: generate what was asked, once. An image node with `status: "generating"` has no `path` yet.
-- `list_models` needs the OpenRouter API key in the settings. If it fails with `no_model`, ask the human to add it.
+- `list_models` and `generate` fail with `no_model` while the model list is loading (a few seconds after the page opens) or when the OpenRouter API key is missing in the settings. Retry once, then ask the human to add the key.
 
 ## Layout
 

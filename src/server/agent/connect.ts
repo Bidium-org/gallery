@@ -34,6 +34,11 @@ type LinkState = "missing" | "ok" | "other" | "blocked";
 const messageOf = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
+const blockedMessage = (link: string) =>
+  `${link} exists and is not a link. Remove it, then retry.`;
+
+const isDetected = (agent: Agent) => isDirectory(agent.configDir);
+
 async function isDirectory(dir: string): Promise<boolean> {
   try {
     return (await fs.stat(dir)).isDirectory();
@@ -67,7 +72,7 @@ async function linkState(link: string): Promise<LinkState> {
 
 async function writeLink(link: string): Promise<void> {
   if ((await linkState(link)) === "blocked") {
-    throw new Error(`${link} exists and is not a link. Remove it, then retry.`);
+    throw new Error(blockedMessage(link));
   }
   await fs.mkdir(path.dirname(link), { recursive: true });
   const tempPath = `${link}.${process.pid}.tmp`;
@@ -83,15 +88,13 @@ async function writeLink(link: string): Promise<void> {
 
 async function connectionOf(agent: Agent): Promise<AgentConnection> {
   const { id, label } = agent;
-  if (!(await isDirectory(agent.configDir))) {
+  if (!(await isDetected(agent))) {
     return { id, label, state: "not_detected" };
   }
   try {
     const link = agent.link ? await linkState(agent.link) : "ok";
-    if (link === "blocked") {
-      throw new Error(
-        `${agent.link} exists and is not a link. Remove it, then retry.`,
-      );
+    if (agent.link && link === "blocked") {
+      throw new Error(blockedMessage(agent.link));
     }
     const installed = await readInstalled();
     if (installed === null || link !== "ok") {
@@ -112,7 +115,7 @@ export const listAgents = () => Promise.all(AGENTS.map(connectionOf));
 export async function connectAgents(): Promise<AgentConnection[]> {
   const detected: Agent[] = [];
   for (const agent of AGENTS) {
-    if (await isDirectory(agent.configDir)) detected.push(agent);
+    if (await isDetected(agent)) detected.push(agent);
   }
 
   const failures = new Map<AgentId, string>();

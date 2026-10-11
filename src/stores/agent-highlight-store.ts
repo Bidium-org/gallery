@@ -11,6 +11,7 @@ export type AgentHighlightState = {
   running: Counts
   held: Counts
   highlight: (ids: string[]) => () => void
+  flash: (ids: string[]) => void
 }
 
 function bump(counts: Counts, ids: string[], delta: number): Counts {
@@ -23,7 +24,7 @@ function bump(counts: Counts, ids: string[], delta: number): Counts {
   return next
 }
 
-export const agentHighlightStore = createStore<AgentHighlightState>()((set) => ({
+export const agentHighlightStore = createStore<AgentHighlightState>()((set, get) => ({
   running: {},
   held: {},
 
@@ -40,6 +41,8 @@ export const agentHighlightStore = createStore<AgentHighlightState>()((set) => (
       )
     }
   },
+
+  flash: (ids) => get().highlight(ids)(),
 }))
 
 export function useAgentHighlight(id: string): HighlightPhase | null {

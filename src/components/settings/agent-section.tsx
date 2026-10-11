@@ -35,6 +35,9 @@ const STATE_DISPLAY: Record<
   error: { icon: AlertTriangle, text: 'Error', className: 'text-red-400' },
 }
 
+const messageOf = (error: unknown) =>
+  error instanceof Error ? error.message : String(error)
+
 function buttonLabel(agents: AgentConnection[]): string {
   const detected = agents.filter((agent) => agent.state !== 'not_detected')
   if (detected.some((agent) => agent.state === 'outdated')) return 'Update'
@@ -54,7 +57,7 @@ export function AgentSection() {
     fetchAgents()
       .then((result) => !cancelled && setAgents(result))
       .catch((error: unknown) => {
-        if (!cancelled) setFailure(error instanceof Error ? error.message : String(error))
+        if (!cancelled) setFailure(messageOf(error))
       })
     return () => {
       cancelled = true
@@ -67,7 +70,7 @@ export function AgentSection() {
     try {
       setAgents(await connectAgents())
     } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error))
+      setFailure(messageOf(error))
     } finally {
       setIsConnecting(false)
     }
