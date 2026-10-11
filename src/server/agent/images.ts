@@ -13,10 +13,15 @@ const IMAGE_URL = /^\/api\/images\/([\w-]+\.\w+)$/;
 
 const MAX_IMAGE_BYTES = 50 * 1024 * 1024;
 
-export class HostStepError extends Error {
-  readonly code: "file_not_found" | "unsupported_image_type" | "file_too_large";
+export type HostStepCode =
+  | "file_not_found"
+  | "unsupported_image_type"
+  | "file_too_large";
 
-  constructor(code: HostStepError["code"], message: string) {
+export class HostStepError extends Error {
+  readonly code: HostStepCode;
+
+  constructor(code: HostStepCode, message: string) {
     super(message);
     this.name = "HostStepError";
     this.code = code;
