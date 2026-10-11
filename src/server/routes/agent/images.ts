@@ -11,8 +11,10 @@ import {
 
 const IMAGE_URL = /^\/api\/images\/([\w-]+\.\w+)$/;
 
+const MAX_IMAGE_BYTES = 50 * 1024 * 1024;
+
 export class HostStepError extends Error {
-  readonly code: "file_not_found" | "unsupported_image_type";
+  readonly code: "file_not_found" | "unsupported_image_type" | "file_too_large";
 
   constructor(code: HostStepError["code"], message: string) {
     super(message);
@@ -21,43 +23,55 @@ export class HostStepError extends Error {
   }
 }
 
-async function readImageFile(
+// Everything that can refuse a file is decided here, from its path and its stats, without reading it.
+async function checkImageFile(
   file: string,
-): Promise<{ name: string; extension: string; buffer: Buffer }> {
+): Promise<{ file: string; name: string; extension: string }> {
   const name = path.basename(file);
-  const extension = resolveExtension(name, "");
+  const extension = resolveExtension(name);
   // Images only: without it, any file of the user could be copied into the images folder and read
   // back through `GET /api/images/…`.
   if (!extension || !IMAGE_EXTENSIONS.has(extension)) {
     throw new HostStepError(
       "unsupported_image_type",
-      `"${name}" is not an image file (png, jpg, jpeg, webp, gif, avif, svg)`,
+      `"${name}" is not an image file (${[...IMAGE_EXTENSIONS].join(", ")})`,
     );
   }
-  try {
-    return { name, extension, buffer: await fs.readFile(file) };
-  } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code === "ENOENT" || code === "EISDIR" || code === "ENOTDIR") {
-      throw new HostStepError("file_not_found", `No file at "${file}"`);
-    }
+
+  const stats = await fs.stat(file).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT" || error.code === "ENOTDIR") return null;
     throw error;
+  });
+  if (!stats?.isFile()) {
+    throw new HostStepError("file_not_found", `No file at "${file}"`);
   }
+  if (stats.size > MAX_IMAGE_BYTES) {
+    throw new HostStepError(
+      "file_too_large",
+      `"${name}" is ${Math.ceil(stats.size / 1024 / 1024)} MB, the limit is ${MAX_IMAGE_BYTES / 1024 / 1024} MB`,
+    );
+  }
+  await fs.access(file, fs.constants.R_OK);
+  return { file, name, extension };
 }
 
+// Every file is checked before the first one is written: a refusal leaves nothing on disk. The files
+// are then read one at a time, so memory never holds more than one.
 export async function prepareAddImage({
   paths,
   position,
 }: CommandArgs<"add_image">): Promise<RendererArgs<"add_image">> {
-  const images = [];
-  for (const file of paths) images.push(await readImageFile(file));
+  const checked = [];
+  for (const file of paths) checked.push(await checkImageFile(file));
 
-  const files = await Promise.all(
-    images.map(async ({ name, extension, buffer }) => ({
+  const files = [];
+  for (const { file, name, extension } of checked) {
+    const buffer = await fs.readFile(file);
+    files.push({
       name,
       url: `/api/images/${await saveImage(buffer, extension)}`,
-    })),
-  );
+    });
+  }
   return { files, position };
 }
 

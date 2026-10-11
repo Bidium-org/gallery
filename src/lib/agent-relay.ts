@@ -13,6 +13,7 @@ async function run(name: string, args: Args): Promise<Outcome> {
     return { ok: true, result: (await (executors[name as keyof typeof executors] as (args: Args) => unknown)(args)) ?? null }
   } catch (error) {
     if (error instanceof CanvasError) return { ok: false, error: error.code, message: error.message }
+    console.error('agent_command_failed', name, error)
     return { ok: false, error: 'internal_error', message: error instanceof Error ? error.message : String(error) }
   }
 }

@@ -114,7 +114,7 @@ export const catalog = {
 
   add_image: defineCommand({
     description:
-      "Adds local image files as image nodes, like dropping them on the canvas. Only image files are accepted (png, jpg, jpeg, webp, gif, avif, svg). Returns, per image, the node id and the absolute path of its stored copy.",
+      "Adds local image files as image nodes, like dropping them on the canvas. Only image files are accepted. Returns, per image, the node id and the absolute path of its stored copy.",
     args: z.strictObject({
       paths: z
         .array(
@@ -271,10 +271,7 @@ export function isAvailableCommand(name: string): name is CommandName {
 }
 
 export function commandTimeoutMs(name: CommandName): number {
-  return (
-    (catalog[name] as Entry<z.ZodObject, undefined>).timeoutMs ??
-    DEFAULT_TIMEOUT_MS
-  );
+  return catalog[name].timeoutMs ?? DEFAULT_TIMEOUT_MS;
 }
 
 // The refusal names each wrong field: `position.x: Invalid input: expected number, received string`.
@@ -282,7 +279,8 @@ export function parseCommandArgs(
   name: CommandName,
   args: unknown,
 ): { ok: true; args: unknown } | { ok: false; message: string } {
-  const parsed = (catalog[name].args as z.ZodType).safeParse(args)
+  const schema: z.ZodType = catalog[name].args
+  const parsed = schema.safeParse(args)
   if (parsed.success) return { ok: true, args: parsed.data }
   const message = parsed.error.issues
     .map((issue) => (issue.path.length > 0 ? `${issue.path.join('.')}: ${issue.message}` : issue.message))

@@ -57,6 +57,7 @@ export async function POST(request: Request) {
       if (error instanceof HostStepError) {
         return fail(error.code, error.message, 422);
       }
+      console.error("agent_host_step_failed", body.name, error);
       const message = error instanceof Error ? error.message : String(error);
       return fail("internal_error", message, 500);
     }

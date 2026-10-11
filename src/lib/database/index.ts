@@ -9,6 +9,7 @@ export {
     EXTENSION_BY_MIME,
     IMAGE_EXTENSIONS,
     imagePath,
+    MIME_BY_EXTENSION,
     readImage,
     resolveExtension,
     saveImage,
