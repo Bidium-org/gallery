@@ -1,12 +1,19 @@
 import { executors } from "@/lib/agent/executors";
-import { createdIds, targetIds } from "@/lib/agent/targets";
 import { CanvasError } from "@/lib/canvas-error";
 import { agentHighlightStore } from "@/stores/agent-highlight-store";
 
 type Args = Record<string, unknown>;
 
+type AnyExecutor = {
+  run: (args: Args) => unknown;
+  lights?: (args: Args) => string[];
+  creates?: (result: unknown) => string[];
+};
+
 type Outcome =
   { ok: true; result: unknown } | { ok: false; error: string; message: string };
+
+type Command = { id: string; name: string; args?: Args };
 
 async function run(name: string, args: Args): Promise<Outcome> {
   if (!Object.hasOwn(executors, name))
@@ -15,15 +22,13 @@ async function run(name: string, args: Args): Promise<Outcome> {
       error: "unknown_command",
       message: `Unknown command: ${name}`,
     };
+  const executor = executors[name as keyof typeof executors] as AnyExecutor;
   const { highlight, flash } = agentHighlightStore.getState();
-  const release = highlight(targetIds(args));
+  const release = highlight(executor.lights?.(args) ?? []);
   try {
-    const result =
-      (await (
-        executors[name as keyof typeof executors] as (args: Args) => unknown
-      )(args)) ?? null;
-    flash(createdIds(result));
-    return { ok: true, result };
+    const result = await executor.run(args);
+    flash(executor.creates?.(result) ?? []);
+    return { ok: true, result: result ?? null };
   } catch (error) {
     if (error instanceof CanvasError)
       return { ok: false, error: error.code, message: error.message };
@@ -41,13 +46,14 @@ async function run(name: string, args: Args): Promise<Outcome> {
 export function startAgentRelay(): void {
   const source = new EventSource("/api/agent/stream");
   source.addEventListener("command", async (event) => {
-    const { id, name, args } = JSON.parse(
-      (event as MessageEvent<string>).data,
-    ) as {
-      id: string;
-      name: string;
-      args?: Args;
-    };
+    let command: Command;
+    try {
+      command = JSON.parse((event as MessageEvent<string>).data) as Command;
+    } catch (error) {
+      console.error("agent_event_invalid", error);
+      return;
+    }
+    const { id, name, args } = command;
     const outcome = await run(name, args ?? {});
     try {
       await fetch("/api/agent/reply", {
