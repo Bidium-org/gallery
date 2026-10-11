@@ -34,8 +34,15 @@ type LinkState = "missing" | "ok" | "other" | "blocked";
 const messageOf = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
 
-const blockedMessage = (link: string) =>
-  `${link} exists and is not a link. Remove it, then retry.`;
+const CONFLICTS: Partial<Record<LinkState, string>> = {
+  blocked: "exists and is not a link",
+  other: "is a link to another folder",
+};
+
+function assertNoConflict(link: string, state: LinkState): void {
+  const conflict = CONFLICTS[state];
+  if (conflict) throw new Error(`${link} ${conflict}. Remove it, then retry.`);
+}
 
 const isDetected = (agent: Agent) => isDirectory(agent.configDir);
 
@@ -71,9 +78,7 @@ async function linkState(link: string): Promise<LinkState> {
 }
 
 async function writeLink(link: string): Promise<void> {
-  if ((await linkState(link)) === "blocked") {
-    throw new Error(blockedMessage(link));
-  }
+  assertNoConflict(link, await linkState(link));
   await fs.mkdir(path.dirname(link), { recursive: true });
   const tempPath = `${link}.${process.pid}.tmp`;
   try {
@@ -93,9 +98,7 @@ async function connectionOf(agent: Agent): Promise<AgentConnection> {
   }
   try {
     const link = agent.link ? await linkState(agent.link) : "ok";
-    if (agent.link && link === "blocked") {
-      throw new Error(blockedMessage(agent.link));
-    }
+    if (agent.link) assertNoConflict(agent.link, link);
     const installed = await readInstalled();
     if (installed === null || link !== "ok") {
       return { id, label, state: "not_connected" };
