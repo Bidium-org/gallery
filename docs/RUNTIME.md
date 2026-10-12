@@ -74,8 +74,9 @@ The command an agent calls: a POSIX shell script (`src/server/agent/assets/galle
 
 ## Packaging
 
-- `npm run electron:package` → `out/Gallery-darwin-arm64/Gallery.app`; `electron:make` → DMG in `out/make/`. macOS only (one maker).
+- `npm run electron:package` → `out/Gallery-darwin-arm64/Gallery.app`; `electron:make` → DMG in `out/make/dmg/arm64/`. macOS arm64 only (one maker, no Intel build).
 - Fuses harden the binary (no `RunAsNode`, asar integrity, load only from asar). Flipping them breaks the signature and an unsigned arm64 binary does not run, so `postPackage` signs the whole bundle ad-hoc again. No notarization.
+- Publishing a version and installing it: `RELEASE.md`.
 
 ## Gotchas
 

@@ -2,9 +2,15 @@
 
 An infinite canvas for generating images with [OpenRouter](https://openrouter.ai) models. Text nodes hold prompts, image nodes hold results, edges say which node feeds which. Add your OpenRouter API key in the settings dialog.
 
-## Install the app (macOS)
+## Install the app (macOS, Apple Silicon)
 
-Open the `.dmg` and drag Gallery to Applications.
+```bash
+curl -fsSL https://raw.githubusercontent.com/Bidium-org/gallery/main/install.sh | sh
+```
+
+It installs the latest release in `/Applications`. Run it again to update, with Gallery closed.
+
+The `.dmg` is also on the [releases page](https://github.com/Bidium-org/gallery/releases), but the app is not notarized: macOS blocks it on first open, until you allow it in System Settings, Privacy & Security, "Open Anyway". The script avoids this.
 
 ## Use with an agent
 
@@ -24,7 +30,7 @@ npm run dev            # in the browser, with the Vite dev server
 npm run electron:dev   # in an Electron window, with hot reload
 ```
 
-Build the app: `npm run electron:package` makes the `.app` in `out/`, `npm run electron:make` makes the `.dmg` in `out/make/`. Other scripts: `npm run build` (front build in `dist/`), `npm run lint`, `npm run format` (Biome).
+Build the app: `npm run electron:package` makes the `.app` in `out/`, `npm run electron:make` makes the `.dmg` in `out/make/`. Publishing a version: `RELEASE.md`. Other scripts: `npm run build` (front build in `dist/`), `npm run lint`, `npm run format` (Biome).
 
 Stack: React, Vite, Tailwind 4, shadcn/ui, React Flow, zustand, Electron Forge. The API routes live in `src/server/routes`, served by a Vite plugin in dev and by the Electron main once packaged.
 
