@@ -25,6 +25,7 @@ gallery/
 │   └── hooks/, types/
 ├── vite.shared.ts  → dev API plugin, shared by the two Vite configs
 ├── forge.config.ts → Electron Forge: packaging, DMG
+├── install.sh      → install or update the app from the latest release (RELEASE.md)
 └── docs/           → this folder
 ```
 
