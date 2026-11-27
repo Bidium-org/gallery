@@ -12,7 +12,8 @@
     "electron:dev": "electron-forge start",
     "electron:package": "electron-forge package",
     "electron:make": "electron-forge make",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "mcp:build": "node mcp/build.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",

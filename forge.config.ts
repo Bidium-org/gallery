@@ -14,8 +14,12 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     appBundleId: "com.birium.gallery",
+    extraResource: ["mcp/dist/gallery-mcp.mcpb", "mcp/dist/gallery-mcp.sha256"],
   },
   hooks: {
+    prePackage: async () => {
+      await run(process.execPath, ["mcp/build.ts"]);
+    },
     // Flipping fuses invalidates the signature, and an unsigned arm64 binary does not run:
     // sign the whole bundle ad-hoc again once it is fully assembled.
     postPackage: async (_config, { outputPaths, platform }) => {
