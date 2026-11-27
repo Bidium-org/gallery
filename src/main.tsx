@@ -9,8 +9,11 @@ import { Canvas } from "@/components/canvas";
 import { Toaster } from "@/components/ui/sonner";
 import { startAgentRelay } from "@/lib/agent/relay";
 import { canvasStore } from "@/stores/canvas-store";
+import { settingsStore } from "@/stores/settings-store";
 
 startAgentRelay();
+void settingsStore.getState().loadMcp();
+window.addEventListener("focus", () => void settingsStore.getState().loadMcp());
 // Called by the Electron main before it quits: the autosave is debounced, an edit would be lost.
 window.__galleryFlushSave = () => canvasStore.getState().flushSave();
 

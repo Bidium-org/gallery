@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Bot, Keyboard, Plug, type LucideIcon } from "lucide-react";
 
 import { AgentSection } from "@/components/settings/agent-section";
@@ -6,19 +5,17 @@ import { ModelsSection } from "@/components/settings/models-section";
 import { ShortcutsSection } from "@/components/settings/shortcuts-section";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useSettingsStore } from "@/stores/settings-store";
+import { type SettingsSection, useSettingsStore } from "@/stores/settings-store";
 
-type Section = "models" | "shortcuts" | "agent";
-
-const NAV_ITEMS: { id: Section; label: string; icon: LucideIcon }[] = [
+const NAV_ITEMS: { id: SettingsSection; label: string; icon: LucideIcon }[] = [
   { id: "models", label: "Models", icon: Bot },
   { id: "shortcuts", label: "Shortcuts", icon: Keyboard },
   { id: "agent", label: "Agent", icon: Plug },
 ];
 
 export function SettingsDialog() {
-  const { settingsDialogOpen, setSettingsDialogOpen } = useSettingsStore((state) => state);
-  const [activeSection, setActiveSection] = useState<Section>("models");
+  const { settingsDialogOpen, setSettingsDialogOpen, settingsSection, setSettingsSection } =
+    useSettingsStore((state) => state);
 
   return (
     <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
@@ -33,9 +30,9 @@ export function SettingsDialog() {
                 key={id}
                 variant="ghost"
                 size="sm"
-                onClick={() => setActiveSection(id)}
+                onClick={() => setSettingsSection(id)}
                 className={`justify-start gap-2.5 ${
-                  activeSection === id ? "bg-neutral-800 text-neutral-200" : "text-neutral-500"
+                  settingsSection === id ? "bg-neutral-800 text-neutral-200" : "text-neutral-500"
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -44,9 +41,9 @@ export function SettingsDialog() {
             ))}
           </nav>
           <div className="min-w-0 flex-1 overflow-y-auto p-6">
-            {activeSection === "models" && <ModelsSection />}
-            {activeSection === "shortcuts" && <ShortcutsSection />}
-            {activeSection === "agent" && <AgentSection />}
+            {settingsSection === "models" && <ModelsSection />}
+            {settingsSection === "shortcuts" && <ShortcutsSection />}
+            {settingsSection === "agent" && <AgentSection />}
           </div>
         </div>
       </DialogContent>

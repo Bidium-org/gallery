@@ -1,7 +1,8 @@
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 
-import { syncApiKeyToast } from "@/lib/api-key-toast";
+import { fetchMcp, openMcpInstall } from "@/lib/agent/connect-client";
+import { syncApiKeyToast, syncMcpAlert } from "@/lib/alerts";
 import {
   resolveShortcuts,
   SHORTCUTS,
@@ -10,14 +11,23 @@ import {
   type ShortcutId,
 } from "@/lib/shortcuts";
 import { imageModelsStore } from "@/stores/image-models-store";
+import type { McpAlertState, McpConnection } from "@/types/TAgentConnect";
 import type { KeybindingOverride, Settings } from "@/types/TSettings";
+
+export type SettingsSection = "models" | "shortcuts" | "agent";
 
 export type SettingsStoreState = {
   settings: Settings | null;
   resolvedShortcuts: ResolvedShortcuts;
   settingsDialogOpen: boolean;
+  settingsSection: SettingsSection;
+  mcp: McpConnection | null;
   setSettingsDialogOpen: (open: boolean) => void;
+  openSettings: (section: SettingsSection) => void;
+  setSettingsSection: (section: SettingsSection) => void;
   loadSettings: () => Promise<void>;
+  loadMcp: () => Promise<void>;
+  installMcp: () => Promise<void>;
   saveApiKey: (apiKey: string) => Promise<{ success: boolean; error?: string }>;
   setDefaultModel: (modelId: string) => Promise<void>;
   setKeybinding: (shortcutId: string, override: KeybindingOverride | null) => Promise<void>;
@@ -34,10 +44,35 @@ export const settingsStore = createStore<SettingsStoreState>()((set, get) => {
     });
   };
 
+  const openSettings = (section: SettingsSection) =>
+    set({ settingsDialogOpen: true, settingsSection: section });
+
   const syncToast = () => {
     const { settings } = get();
     if (!settings) return;
-    syncApiKeyToast(Boolean(settings.openRouterApiKey), () => set({ settingsDialogOpen: true }));
+    syncApiKeyToast(Boolean(settings.openRouterApiKey), () => openSettings("models"));
+  };
+
+  const syncMcp = () => {
+    const { settings, mcp } = get();
+    if (!settings || !mcp) return;
+    const alert =
+      (mcp.state === "not_connected" || mcp.state === "outdated") &&
+      !settings.dismissedMcpAlerts.includes(mcp.state)
+        ? mcp.state
+        : null;
+    syncMcpAlert(alert, {
+      openSettings: () => openSettings("agent"),
+      dismiss: (state: McpAlertState) => {
+        const current = get().settings;
+        if (!current) return;
+        const dismissedMcpAlerts = [...current.dismissedMcpAlerts, state];
+        set({ settings: { ...current, dismissedMcpAlerts } });
+        void patchSettings({ dismissedMcpAlerts }).catch((error) =>
+          console.error("settings_update_failed", error),
+        );
+      },
+    });
   };
 
   const patchSettings = (partial: Partial<Settings>): Promise<void> => {
@@ -51,6 +86,7 @@ export const settingsStore = createStore<SettingsStoreState>()((set, get) => {
 
       applySettings((await response.json()) as Settings);
       syncToast();
+      syncMcp();
     });
     patchQueue = run.then(
       () => undefined,
@@ -63,8 +99,12 @@ export const settingsStore = createStore<SettingsStoreState>()((set, get) => {
     settings: null,
     resolvedShortcuts: resolveShortcuts({}),
     settingsDialogOpen: false,
+    settingsSection: "models",
+    mcp: null,
 
     setSettingsDialogOpen: (open) => set({ settingsDialogOpen: open }),
+    openSettings,
+    setSettingsSection: (section) => set({ settingsSection: section }),
 
     loadSettings: async () => {
       try {
@@ -74,6 +114,7 @@ export const settingsStore = createStore<SettingsStoreState>()((set, get) => {
         const settings = (await response.json()) as Settings;
         applySettings(settings);
         syncToast();
+        syncMcp();
 
         if (settings.openRouterApiKey) {
           void imageModelsStore.getState().fetchModels();
@@ -81,6 +122,20 @@ export const settingsStore = createStore<SettingsStoreState>()((set, get) => {
       } catch (error) {
         console.error("settings_load_failed", error);
       }
+    },
+
+    loadMcp: async () => {
+      try {
+        set({ mcp: await fetchMcp() });
+        syncMcp();
+      } catch (error) {
+        console.error("mcp_state_load_failed", error);
+      }
+    },
+
+    installMcp: async () => {
+      set({ mcp: await openMcpInstall() });
+      syncMcp();
     },
 
     saveApiKey: async (apiKey) => {
