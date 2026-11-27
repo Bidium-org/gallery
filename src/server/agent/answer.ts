@@ -31,6 +31,7 @@ const ERROR_CLASS: Record<AgentErrorCode, ErrorClass> = {
   unknown_node: "call",
   unknown_edge: "call",
   not_a_text_node: "call",
+  not_an_image_node: "call",
   unknown_canvas: "call",
   version_out_of_range: "call",
   unknown_model: "call",

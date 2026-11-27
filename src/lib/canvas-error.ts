@@ -2,6 +2,7 @@ export type CanvasErrorCode =
   | "unknown_node"
   | "unknown_edge"
   | "not_a_text_node"
+  | "not_an_image_node"
   | "unknown_canvas"
   | "version_out_of_range"
   | "no_model"
