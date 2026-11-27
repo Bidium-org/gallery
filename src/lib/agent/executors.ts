@@ -2,7 +2,7 @@ import { type CommandName, type RendererArgs } from "@/lib/agent/catalog";
 import { CanvasError } from "@/lib/canvas-error";
 import { getMaxReferences } from "@/lib/models";
 import { currentVersion, isEdgeVisible, isTextNode, versionInputNodes } from "@/lib/versioning";
-import { canvasStore } from "@/stores/canvas-store";
+import { canvasStore, requireNode } from "@/stores/canvas-store";
 import { imageModelsStore } from "@/stores/image-models-store";
 import type { CanvasEdge, CanvasNode } from "@/types/TCanvasNode";
 
@@ -61,6 +61,20 @@ function readCanvas() {
       .filter((edge) => isEdgeVisible(edge, nodes))
       .map(({ id, source, target }) => ({ id, source, target })),
   };
+}
+
+function viewImages(ids: string[]) {
+  const { nodes } = canvasStore.getState();
+  return ids.map((id) => {
+    const node = requireNode(nodes, id);
+    if (node.type !== "image") {
+      throw new CanvasError(
+        "not_an_image_node",
+        `Node "${id}" is a ${node.type} node, not an image node`,
+      );
+    }
+    return { id, status: node.data.status ?? "ready", imageUrl: node.data.imageUrl };
+  });
 }
 
 function listModels() {
@@ -195,5 +209,10 @@ export const executors = {
     },
     lights: ({ id }) => [id],
     creates: (images) => images.map(({ id }) => id),
+  }),
+
+  view_images: executor("view_images", {
+    run: ({ ids }) => viewImages(ids),
+    lights: ({ ids }) => ids,
   }),
 } satisfies Executors;

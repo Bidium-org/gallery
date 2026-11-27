@@ -4,12 +4,13 @@ import path from "node:path";
 import { GALLERY_DIR } from "@/lib/database/internals/paths";
 
 import cliScript from "./agent/assets/gallery.sh?raw";
+import { readMcpFingerprint } from "./agent/mcp";
 import { writeAtomic } from "./write-atomic";
 
 export const HOST_FILE = path.join(GALLERY_DIR, "host.json");
 const CLI_FILE = path.join(GALLERY_DIR, "bin", "gallery");
 
-type HostInfo = { url: string; pid: number; startedAt: string };
+type HostInfo = { url: string; pid: number; startedAt: string; mcp?: string };
 
 export async function writeHostFiles(url: string): Promise<void> {
   try {
@@ -22,6 +23,12 @@ export async function writeHostFiles(url: string): Promise<void> {
     pid: process.pid,
     startedAt: new Date().toISOString(),
   };
+  try {
+    const mcp = await readMcpFingerprint();
+    if (mcp) info.mcp = mcp;
+  } catch (error) {
+    console.error("mcp_fingerprint_read_failed", error);
+  }
   await writeAtomic(HOST_FILE, JSON.stringify(info, null, 2));
 }
 

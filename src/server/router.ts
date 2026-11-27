@@ -3,6 +3,7 @@ import * as agentCommand from "./routes/agent/command/route";
 import * as agentConnect from "./routes/agent/connect/route";
 import * as agentCommands from "./routes/agent/commands/route";
 import * as agentCommandByName from "./routes/agent/commands/[name]/route";
+import * as agentMcp from "./routes/agent/mcp/route";
 import * as agentReply from "./routes/agent/reply/route";
 import * as agentStream from "./routes/agent/stream/route";
 import * as canvasList from "./routes/canvas/route";
@@ -26,6 +27,7 @@ const table: [string, unknown][] = [
   ["/api/agent/commands", agentCommands],
   ["/api/agent/connect", agentConnect],
   ["/api/agent/commands/:name", agentCommandByName],
+  ["/api/agent/mcp", agentMcp],
   ["/api/agent/reply", agentReply],
   ["/api/agent/stream", agentStream],
   ["/api/canvas", canvasList],

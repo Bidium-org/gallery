@@ -8,3 +8,10 @@ export type AgentConnection = {
   state: AgentState;
   message?: string;
 };
+
+export type McpConnection = {
+  state: AgentState;
+  message?: string;
+};
+
+export type McpAlertState = Extract<AgentState, "not_connected" | "outdated">;

@@ -11,6 +11,7 @@ type Entry<A extends z.ZodObject, R extends z.ZodObject | undefined> = {
   // What the renderer receives when the host step rewrites the arguments (`add_image`).
   relayed?: R;
   timeoutMs?: number;
+  mcpAttachImages?: boolean;
 };
 
 const defineCommand = <A extends z.ZodObject, R extends z.ZodObject | undefined = undefined>(
@@ -224,6 +225,15 @@ export const catalog = {
     args: z.strictObject({ id: id("Id of a text node.") }),
     example: { id: EXAMPLE_ID },
     timeoutMs: 110_000,
+    mcpAttachImages: true,
+  }),
+
+  view_images: defineCommand({
+    description:
+      "Returns the file of each image node, to look at it: per node, its id, status and the absolute path of the file. An image still generating has no path yet.",
+    args: z.strictObject({ ids: ids("Ids of image nodes.") }),
+    example: { ids: [EXAMPLE_ID] },
+    mcpAttachImages: true,
   }),
 };
 

@@ -9,6 +9,8 @@ vite.shared.ts            → `gallery-api` plugin (dev host) + `@` alias
 vite.config.ts            → `npm run dev`
 vite.renderer.config.ts   → `electron:dev` renderer: same plugins as above
 vite.main.config.ts       → Forge bundle of the main: alias only
+vite.mcp.config.ts        → the MCP server in one CommonJS file (`docs/MCP.md`)
+mcp/build.ts              → `npm run mcp:build`: compile, manifest, fingerprint, `.mcpb`
 ```
 
 ## Owns
@@ -16,7 +18,7 @@ vite.main.config.ts       → Forge bundle of the main: alias only
 - The three run modes and which process hosts the router in each.
 - `host.json` and `~/.gallery/bin/gallery` lifecycle: when they are written and removed, and what the `pid` means.
 - Window setup and the quit sequence.
-- Packaging and signing.
+- Packaging and signing, the `.mcpb` included.
 
 ## One router, three run modes
 
@@ -45,7 +47,7 @@ The main tells the modes apart with `MAIN_WINDOW_VITE_DEV_SERVER_URL`: set (`ele
 
 ## `host.json`
 
-`~/.gallery/host.json` (`{ url, pid, startedAt }`) tells a client where the running host is.
+`~/.gallery/host.json` (`{ url, pid, startedAt, mcp? }`) tells a client where the running host is, and the MCP server whether it is out of date (`mcp`, `docs/HOST.md`).
 
 - Written when the host starts listening, removed on exit by the process that owns the `pid`.
 - Always read `url` from it: dev servers listen on IPv6 only, so `127.0.0.1` is refused there, and the packaged port is random.
@@ -78,9 +80,18 @@ The command an agent calls: a POSIX shell script (`src/server/agent/assets/galle
 - Fuses harden the binary (no `RunAsNode`, asar integrity, load only from asar). Flipping them breaks the signature and an unsigned arm64 binary does not run, so `postPackage` signs the whole bundle ad-hoc again. No notarization.
 - Publishing a version and installing it: `RELEASE.md`.
 
+## The `.mcpb`
+
+The MCP server for Cowork (`docs/MCP.md`) ships inside the app, as `gallery-mcp.mcpb`.
+
+- `npm run mcp:build` (`mcp/build.ts`, run by Node directly) compiles `mcp/server.ts` with `vite.mcp.config.ts` into one `server.cjs`, with no `node_modules` (`.cjs`: the repo's `"type": "module"` would make a `.js` ESM). It starts that file once to list its tools and writes `manifest.json` from them (name `gallery-mcp`, author Bidium, the version of `package.json`, for display only), writes the sha256 of `server.cjs` to `gallery-mcp.sha256`, then `mcpb pack` makes `gallery-mcp.mcpb`. All in `mcp/dist/`, ignored by git. About 200 KB, against 14 MB for a server shipped with its `node_modules`.
+- `electron:package` and `electron:make` run it first (`prePackage` hook), and `extraResource` copies the `.mcpb` and the fingerprint file to `Gallery.app/Contents/Resources/`, outside the asar, where the host can `open` the `.mcpb`. The release workflow does not change. The `.mcpb` is never committed: it would go stale.
+- The host finds them in `process.resourcesPath` once packaged, in `mcp/dist/` of the repo in dev (`src/server/agent/mcp.ts`). In dev, run `npm run mcp:build` by hand, then restart the server: `host.json` gets the fingerprint when the host starts.
+- Two builds of the same code give the same `server.cjs` (checked on one machine).
+
 ## Gotchas
 
 - A packaged `.app` older than the last commit is silently stale: repackage before testing it.
 - The Vite dev server watches `.vite/` and `out/`: packaging while `npm run dev` is open reloads the page.
 - `npm run build` outputs `dist/` (front only, no API) and nothing serves it. It is not the Electron build.
-- To test without touching real data, set `HOME` to a throwaway folder (data, `host.json` and `bin/gallery` all live under `HOME/.gallery`).
+- To test without touching real data, set `HOME` to a throwaway folder (data, `host.json` and `bin/gallery` all live under `HOME/.gallery`). The MCP server reads `HOME` too, for `host.json` and Claude Desktop's config.

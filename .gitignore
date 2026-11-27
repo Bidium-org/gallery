@@ -17,6 +17,7 @@
 /dist
 /.vite
 /out
+/mcp/dist
 
 # misc
 .DS_Store

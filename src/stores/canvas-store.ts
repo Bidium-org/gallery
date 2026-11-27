@@ -121,7 +121,7 @@ const withData = <N extends CanvasNode>(node: N, data: N["data"]): N => ({
   data,
 });
 
-function requireNode(nodes: CanvasNode[], id: string): CanvasNode {
+export function requireNode(nodes: CanvasNode[], id: string): CanvasNode {
   const node = nodes.find((candidate) => candidate.id === id);
   if (!node) throw new CanvasError("unknown_node", `No node with id "${id}"`);
   return node;
