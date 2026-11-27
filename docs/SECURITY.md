@@ -1,6 +1,6 @@
 # Security
 
-The threat model of the local host: who can talk to it, what stops them, what does not, and the open question of a local secret. The agent side: `docs/CLI.md`. Where the guard sits in the pipeline: `docs/HOST.md`.
+The threat model of the local host: who can talk to it, what stops them, what does not, and the open question of a local secret. The agent side: `docs/CLI.md` and `docs/MCP.md`. Where the guard sits in the pipeline: `docs/HOST.md`.
 
 ## The setting
 
@@ -19,7 +19,7 @@ Left possible: an `<img>` tag, which carries no `Origin`, displaying one image. 
 
 ## What it does not stop: other local programs
 
-A request with no `Origin` (curl, the `gallery` script) passes: it is not a browser. A process can also send any `Origin`, including one equal to `Host`. The guard cannot tell it from the page.
+A request with no `Origin` (curl, the `gallery` script, the `gallery-mcp` server) passes: it is not a browser. The MCP server is a local process started by Claude Desktop under the user's account, like the script: it changes nothing below. A process can also send any `Origin`, including one equal to `Host`. The guard cannot tell it from the page.
 
 - A process under the **user's own account** needs nothing from the host: it reads `host.json`, the canvases and the key (`~/.gallery/data/settings.json`, in clear) directly.
 - **Another macOS account** on the same Mac, or a **sandboxed app** with network access, can reach the port without reading the user's files. General knowledge, not verified here. What they can do: drive the canvas, read canvases, spend OpenRouter credits, copy one of the user's images through `add_image`. They cannot get the key.
@@ -30,7 +30,7 @@ This is the posture of Ollama, which ships with no authentication on localhost (
 
 The host reads the path it is given. Without a limit, anything reaching the port could make the host copy any of the user's files into the images folder and read it back through `GET /api/images/…`. So it accepts **image files only**, judged by extension, not by content: a non-image renamed `.png` passes. The other limits (size, order of checks) are in `docs/HOST.md`.
 
-`POST /api/agent/connect` writes the skill into another tool's folder. Its content and destinations are fixed and no path comes from the request.
+`POST /api/agent/connect` writes the skill into another tool's folder. Its content and destinations are fixed and no path comes from the request. `POST /api/agent/mcp` runs `open` on the `.mcpb` embedded in the app, a fixed path; Claude Desktop then asks the human before installing anything.
 
 ## Open question: a local secret
 

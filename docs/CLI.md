@@ -1,11 +1,11 @@
 # Agent CLI
 
-An agent with a shell (Claude Code, Codex) drives the open canvas through `gallery`, the same way the user does. What the guard does and does not stop: `docs/SECURITY.md`. Map: `docs/OVERVIEW.md`.
+An agent with a shell on the Mac (Claude Code, Codex) drives the open canvas through `gallery`, the same way the user does. This doc also holds what every agent client shares: the relay, the catalog, the manual and the skill. The second client, the MCP server for Cowork: `docs/MCP.md`. What the guard does and does not stop: `docs/SECURITY.md`. Map: `docs/OVERVIEW.md`.
 
 ```
 src/lib/agent/            → catalog (the commands), executors (what the renderer does and highlights), relay (renderer listener)
-src/server/agent/         → relay hub, answers and error classes, add_image host step, skill installer
-src/server/agent/assets/  → the script, the manual and the skill (all bundled as text)
+src/server/agent/         → relay hub, answers and error classes, add_image host step, skill installer, manual assembly
+src/server/agent/assets/  → the script, the manual in three parts and the skill (all bundled as text)
 src/server/routes/agent/  → the routes only
 src/stores/agent-highlight-store.ts → highlight state
 ```
@@ -28,13 +28,15 @@ The agent never touches the canvas: the host pushes each command over SSE to a r
 
 ## Catalog
 
-`src/lib/agent/catalog.ts` is the single declaration of what an agent can do: name, description, zod schema, example, timeout. The host validates against it and serves `help` from it; the renderer executes. `executors` is typed from the catalog, so a command without an executor fails `tsc`.
+`src/lib/agent/catalog.ts` is the single declaration of what an agent can do: name, description, zod schema, example, timeout. The host validates against it and serves `help` from it; the renderer executes; the MCP server compiles it in and registers one tool per command (`docs/MCP.md`). `executors` is typed from the catalog, so a command without an executor fails `tsc`.
 
 - Schemas are strict: a mistyped field is refused, not ignored.
 - The JSON Schema conversion drops `refine` rules ("absolute path", "different nodes"): they live in descriptions and in the refusal message.
 - Timeouts default to 10 s. `generate` has 110 s: the agent's shell tool times out at 2 minutes, and a longer relay timeout would get the call killed without the clean `timeout` answer.
 - `add_image` is the only command with a host step (the host reads the file, `src/server/agent/images.ts`), so its entry has a second schema for what the renderer receives. The command route triggers the step by the command's name. A second host step turns that special case into a registry by command, on the server side: not in the catalog, which the renderer imports and which would pull `fs` into its bundle.
 - `sleep` exists in dev only.
+- `mcpAttachImages` marks the commands whose images the MCP server attaches to its answer (`generate`, `view_images`, `docs/MCP.md`). The host and the script ignore it; the answer of `/api/agent/command` is the same for both clients. `get_canvas` does not have it: on a large canvas it would attach every image.
+- `view_images` returns, per image node, its id, status and `path`: with the CLI the agent opens the paths, with the MCP it sees the images. A non-image node is `not_an_image_node`.
 
 **Adding a command:** a catalog entry, then an executor of the same name in `executors.ts` that calls the store action the UI calls (create it and rewire the UI onto it if it does not exist: executive code is written once, only the transport differs). The executor declares the nodes it lights while it runs (`lights`, from its arguments) and those it flashes after (`creates`, from its result); `tsc` checks both against the real shapes. A new error code is classified in `src/server/agent/answer.ts`. `manual.md` changes only if a convention does.
 
@@ -63,8 +65,8 @@ The script's own errors are plain `printf` so they work without `jq`: their mess
 
 ## Manual and skill
 
-- **Manual** (`manual.md`): returned by `gallery help`, served and versioned by the app. Conventions only: output, workflow, layout, conduct. It never describes a command's arguments, or the two drift. Its exit codes restate the classes of `answer.ts` for the agent: change both together.
-- **Skill** (`skill.md`): about five lines, stable across versions: what Gallery is, the script's path, "start with `gallery help`". Everything that changes lives in the manual, so the skill never needs updating.
+- **Manual**: conventions only: output, workflow, layout, conduct. It never describes a command's arguments, or the two drift. Three files, assembled by `src/server/agent/manual.ts`: `manual.md` holds what holds for every client (intro, Working, Layout, Conduct) and a `{{CALLING}}` slot; `manual-cli.md` and `manual-mcp.md` fill it, each with how its client calls and fails. `gallery help` serves common + CLI; the MCP server sends common + MCP as its instructions. `{{ARTIFACT_GAP}}` and `{{ARTIFACT_STACK_GAP}}` are filled from `src/lib/constants.ts` in both. The exit codes of `manual-cli.md` and the families of `manual-mcp.md` restate the classes of `answer.ts`: change them together.
+- **Skill** (`skill.md`): a few lines, stable across versions: what Gallery is, then which client to use. It checks that `~/.gallery/bin/gallery` exists and starts with `gallery help`; without it (Cowork's shells have no `~/.gallery`, `docs/MCP.md`) it uses the tools of `gallery-mcp`. The CLI first: in Claude Desktop's Code tab both are there. Everything that changes lives in the manual. The `gallery` skill of the bidium plugin carries the same choice.
 - **Installing it**: the "Connect an agent" button in the settings. The click is the consent: nothing is written into another tool's folder without it. The one copy is `~/.agents/skills/gallery/SKILL.md`, which Codex reads directly (OpenAI's docs list `~/.agents/skills`, not `~/.codex/skills`). Claude Code gets a symlink to it from `~/.claude/skills/gallery`, as `npx skills` does. An agent is detected by its config folder; with none, nothing is written. A folder, or a symlink pointing elsewhere, already at the symlink's place is never touched: Claude Code shows in error until the human removes it.
 - Unverified: that Claude Code follows the symlink, and that Codex's `view_image` takes the path `generate` returns.
 
@@ -87,5 +89,6 @@ A JS CLI would bring the repo's language, a small gain; local zod validation is 
 ## Gotchas
 
 - After exit 3, read `get_canvas` before retrying.
+- After editing the catalog or the manual, rebuild the MCP server (`docs/MCP.md`).
 - A prompt the human is editing lives in the text node's state, invisible to the store: it can overwrite an agent's `set_prompt` on outside click. Written in the manual, not fixed.
 - `get_canvas` omits a node's `size` until the canvas has measured it.

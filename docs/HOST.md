@@ -9,7 +9,7 @@ src/server/
 ├── node-adapter.ts  → Node request/response ↔ Request/Response
 ├── write-atomic.ts  → temp file then `rename`, for every file the host writes outside the database
 ├── host-file.ts     → writes `~/.gallery/host.json` and `~/.gallery/bin/gallery` (lifecycle: `docs/RUNTIME.md`)
-├── agent/           → the agent's server side: relay hub, answers, add_image host step, skill installer; assets/ holds the script, the manual and the skill
+├── agent/           → the agent's server side: relay hub, answers, add_image host step, skill installer, manual assembly, MCP state and install; assets/ holds the script, the manual and the skill
 └── routes/          → canvas/, images/, settings/ (the other routes belong to OpenRouter and Agent relay)
 src/lib/database/
 ├── index.ts         → the only import point for routes
@@ -44,7 +44,7 @@ Move to [Hono](https://hono.dev) when the table passes ~30 routes, or when sever
 
 ```
 ~/.gallery/
-├── host.json            → where the running host is
+├── host.json            → where the running host is, and the fingerprint of the embedded MCP
 ├── bin/gallery          → the agent's command, rewritten at every start
 └── data/
     ├── canvas/<uuid>.json   → one file per canvas
@@ -57,6 +57,7 @@ Move to [Hono](https://hono.dev) when the table passes ~30 routes, or when sever
 - `PATCH /api/canvas/:id` shallow-merges the top-level fields it receives, so `{ name }` alone is valid (renaming a canvas that is not open).
 - Updates read, merge and write under an in-memory lock per canvas id (one lock for settings), through a temp file then `rename`. Creation is a plain write.
 - `host.json` and `bin/gallery` are written the same way; with two hosts running, the last writer wins.
+- `host.json` is `{ url, pid, startedAt, mcp? }`. `mcp` is the fingerprint of the MCP server embedded in the app, read from the file the build puts next to the `.mcpb`; it is missing when there is none (dev without `npm run mcp:build`). The script reads only `url`; the MCP server reads `url` and compares `mcp` with its own (`docs/MCP.md`).
 
 ## Images
 
@@ -68,7 +69,12 @@ Move to [Hono](https://hono.dev) when the table passes ~30 routes, or when sever
 
 ## Settings and API key
 
-- `settings.json` holds the OpenRouter key in clear, the default model id and keybinding overrides. A missing file means defaults; stored keybindings are merged over the defaults on read.
+- `settings.json` holds:
+  - the OpenRouter key, in clear;
+  - the default model id;
+  - the keybinding overrides;
+  - the MCP alerts closed for good (`dismissedMcpAlerts`, `docs/MCP.md`).
+- A missing file means defaults; stored keybindings are merged over the defaults on read.
 - The key never leaves the host in clear: `GET` and `PATCH /api/settings` answer `sk-or-` + 30 `•` + the last four characters.
 - A `PATCH` whose key contains `•` is treated as the masked value sent back, and the stored key is kept. The front compares against its own `maskApiKey()` in `src/components/settings/api-key.tsx`: both MUST produce the same string.
 - The OpenRouter routes `generate`, `name` and `image-models` read the real key through `getSettings()` from `src/lib/database`.

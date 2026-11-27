@@ -23,6 +23,7 @@ gallery/
 │   ├── lib/        → front logic (versioning, history, generation) + database/ (Node-only, fs)
 │   ├── server/     → HTTP host: router, guard, routes/ (one folder per endpoint)
 │   └── hooks/, types/
+├── mcp/            → MCP server for Cowork, and the build of its `.mcpb`
 ├── vite.shared.ts  → dev API plugin, shared by the two Vite configs
 ├── forge.config.ts → Electron Forge: packaging, DMG
 ├── install.sh      → install or update the app from the latest release (RELEASE.md)
@@ -33,11 +34,12 @@ gallery/
 
 | Module      | Owns                                                                                                                      | Doc                |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| Runtime     | `electron/`, `forge.config.ts`, `vite*.ts`: how the app starts, is hosted, built, packaged                                | `docs/RUNTIME.md`  |
+| Runtime     | `electron/`, `forge.config.ts`, `vite*.ts`, `mcp/build.ts`: how the app starts, is hosted, built, packaged                | `docs/RUNTIME.md`  |
 | Host        | `src/server/` router, guard, adapter; canvas, images, settings routes; `src/lib/database/`                                | `docs/HOST.md`     |
 | OpenRouter  | OpenRouter calls: generate, name, image-models, validate-key; `src/lib/{generation,models}.ts`                            | `docs/OPENROUTER.md` |
 | Canvas      | graph model, versions, mentions, undo, autosave, named actions: `src/stores/canvas-store.ts`, `src/lib/{versioning,history,subgraph,canvas-error}.ts` | `docs/CANVAS.md`   |
 | Agent relay | SSE command channel to the renderer, and the catalog of commands (validated by the host, run by the renderer): `src/server/agent/`, `src/server/routes/agent/`, `src/lib/agent/`; the `gallery` shell script, `src/server/agent/assets/gallery.sh` | `docs/CLI.md`      |
+| MCP         | the MCP server for Cowork, `mcp/`; its state, install and alert in the app: `src/server/agent/mcp.ts`, `src/lib/alerts.ts` | `docs/MCP.md`      |
 | UI          | `src/components/`, `src/hooks/`, settings and model stores                                                                | none               |
 
 ```mermaid
@@ -94,12 +96,13 @@ Handlers live in `src/server/routes/<path>/route.ts`.
 | `/api/agent/commands`        | GET                | Agent relay |
 | `/api/agent/commands/:name`  | GET                | Agent relay |
 | `/api/agent/connect`         | GET, POST          | Agent relay |
+| `/api/agent/mcp`             | GET, POST          | Agent relay |
 | `/api/agent/reply`           | POST               | Agent relay |
 
 ## Conventions
 
 - Alias `@` = `src/`.
-- `src/server/**` and `src/lib/database/**` use Node APIs: the renderer MUST NOT import them. Shared shapes live in `src/types/` (prefix `T`). The one `src/lib/` module the host imports is `agent/catalog.ts`: it imports zod only, so both sides can load it.
+- `src/server/**` and `src/lib/database/**` use Node APIs: the renderer MUST NOT import them. Shared shapes live in `src/types/` (prefix `T`). The one `src/lib/` module the host imports is `agent/catalog.ts`: it imports zod only, so both sides can load it. `mcp/server.ts` compiles in the catalog and the manual.
 - A route is a `route.ts` exporting `GET`/`POST`/… as `(Request, { params }) → Response`. A new route = new file + one line in the `table` of `router.ts`.
 - The renderer owns the open canvas; the host only stores snapshots.
 - Four zustand stores in `src/stores/` (`canvasStore`, `settingsStore`, `imageModelsStore`, `agentHighlightStore`), each with a `useXStore` hook.
